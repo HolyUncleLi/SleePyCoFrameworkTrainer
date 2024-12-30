@@ -229,7 +229,7 @@ class ModernTCN(nn.Module):
 
         self.task_name = task_name
         self.class_drop = class_drop
-        self.batchsize = 5
+        self.batchsize = 32
         self.seq_len = 10
         self.channeldim = 128
         self.featuredim = self.seq_len * 8
@@ -257,7 +257,7 @@ class ModernTCN(nn.Module):
         self.patch_stride = patch_stride
         self.downsample_ratio = downsample_ratio
 
-
+        '''
         # FTCNN
         self.ftcnn_channels = dims[0]
         self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
@@ -266,7 +266,7 @@ class ModernTCN(nn.Module):
             nn.BatchNorm1d(self.ftcnn_channels),
             nn.Conv1d(self.ftcnn_channels, self.ftcnn_channels, kernel_size=patch_size, stride=patch_stride),
         )
-
+        '''
 
         # cnn backbone
         self.num_stage = len(num_blocks)
