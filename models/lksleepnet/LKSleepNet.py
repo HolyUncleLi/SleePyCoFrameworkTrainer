@@ -229,11 +229,11 @@ class ModernTCN(nn.Module):
 
         self.task_name = task_name
         self.class_drop = class_drop
-        self.batchsize = 32
+        self.batchsize = 64
         self.seq_len = 10
         self.channeldim = 128
         self.featuredim = self.seq_len * 8
-        self.embeddim = 32
+        self.embeddim = 64
         self.class_num = class_num
 
         # stem layer & down sampling layers
@@ -298,7 +298,7 @@ class ModernTCN(nn.Module):
 
     def forward_feature(self, x, te=None):
         B, M, L = x.shape
-        ftcnn_res = torch.rand([]).cuda()
+        # ftcnn_res = torch.rand([]).cuda()
         x = x.unsqueeze(-2)
 
         for i in range(self.num_stage):
