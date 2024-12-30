@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from utils import *
 from loader import EEGDataLoader
 from models.main_model import MainModel
+from test import *
 
 
 class OneFoldTrainer:
@@ -62,7 +63,7 @@ class OneFoldTrainer:
         train_dataset = EEGDataLoader(self.cfg, self.fold, set='train')
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=True, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True)
         val_dataset = EEGDataLoader(self.cfg, self.fold, set='val')
-        val_loader = DataLoader(dataset=val_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         test_dataset = EEGDataLoader(self.cfg, self.fold, set='test')
         test_loader = DataLoader(dataset=test_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True)
         print('[INFO] Dataloader prepared')
@@ -165,6 +166,36 @@ class OneFoldTrainer:
             return y_true, y_pred
         else:
             raise NotImplementedError
+
+    def test(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('--seed', type=int, default=42, help='random seed')
+        parser.add_argument('--gpu', type=str, default="0", help='gpu id')
+        parser.add_argument('--config', type=str,
+                            default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
+                            help='config file path')
+        args = parser.parse_args()
+
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+
+        with open(args.config) as config_file:
+            config = json.load(config_file)
+        config['name'] = os.path.basename(args.config).replace('.json', '')
+
+        Y_true = np.zeros(0)
+        Y_pred = np.zeros((0, config['classifier']['num_classes']))
+
+        for fold in range(1, config['dataset']['num_splits'] + 1):
+            evaluator = OneFoldEvaluator(args, fold, config)
+            y_true, y_pred = evaluator.run()
+            Y_true = np.concatenate([Y_true, y_true])
+            Y_pred = np.concatenate([Y_pred, y_pred])
+
+            summarize_result(config, fold, Y_true, Y_pred)
 
     def run(self):
         for epoch in range(self.tp_cfg['max_epochs']):

@@ -56,6 +56,8 @@ class OneFoldEvaluator(OneFoldTrainer):
 
         return y_true, y_pred
 
+
+'''
 def main():
     warnings.filterwarnings("ignore", category=DeprecationWarning) 
     warnings.filterwarnings("ignore", category=UserWarning) 
@@ -87,3 +89,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''
