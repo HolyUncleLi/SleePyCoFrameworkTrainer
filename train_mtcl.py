@@ -61,11 +61,11 @@ class OneFoldTrainer:
     
     def build_dataloader(self):
         train_dataset = EEGDataLoader(self.cfg, self.fold, set='train')
-        train_loader = DataLoader(dataset=train_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=True, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True)
+        train_loader = DataLoader(dataset=train_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=True, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         val_dataset = EEGDataLoader(self.cfg, self.fold, set='val')
         val_loader = DataLoader(dataset=val_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         test_dataset = EEGDataLoader(self.cfg, self.fold, set='test')
-        test_loader = DataLoader(dataset=test_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=4*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         print('[INFO] Dataloader prepared')
 
         return {'train': train_loader, 'val': val_loader, 'test': test_loader}
