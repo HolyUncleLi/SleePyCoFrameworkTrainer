@@ -279,7 +279,7 @@ class ModernTCN(nn.Module):
         self.flatten = nn.Flatten()
 
         # times backbone
-        self.embed = ARFEmbedding(128, 32)
+        self.embed = ARFEmbedding(128, 64)
         # self.embed = CBAMEmbedding(128, 16)
         self.times_drop = nn.Dropout(0.5)
         self.timesNet = getmodel()
@@ -359,7 +359,7 @@ class ModernTCN(nn.Module):
         x = x + cnn_out
         # print("lksleepnet times shape: ", x.shape)
         # head
-        x = x.view(self.batchsize, 32, self.featuredim)
+        x = x.view(self.batchsize, 64, self.featuredim)
         # x = self.head_class2(x)
         '''
         x = x.reshape(self.batchsize, self.seq_len, 5)

@@ -15,7 +15,7 @@
     },
 
     "feature_pyramid": {
-        "dim": 32,
+        "dim": 64,
         "num_scales": 0
     },
 

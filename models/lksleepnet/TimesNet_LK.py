@@ -258,7 +258,7 @@ parser.add_argument('--mask_rate', type=float, default=0.25, help='mask ratio')
 parser.add_argument('--anomaly_ratio', type=float, default=0.25, help='prior anomaly ratio (%)')
 
 # model define
-dim = 32
+dim = 64
 parser.add_argument('--top_k', type=int, default=5, help='for TimesBlock')
 parser.add_argument('--num_kernels', type=int, default=3, help='for Inception')
 parser.add_argument('--enc_in', type=int, default=0, help='encoder input size')

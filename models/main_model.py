@@ -48,6 +48,8 @@ class MainModel(nn.Module):
             self.feature = AttnSleep()
         elif self.bb_cfg['name'] == 'LKSleepNet':
             self.feature = getmodel()
+        elif self.bb_cfg['name'] == 'LKFGNN':
+            print('_')
         else:
             raise NotImplementedError('backbone not supported: {}'.format(config['backbone']['name']))
 
@@ -104,9 +106,7 @@ class MainModel(nn.Module):
             if self.training_mode == 'pretrain':
                 outputs.append(F.normalize(self.head(feature)))
             elif self.training_mode in ['scratch', 'fullfinetune', 'freezefinetune']:
-                # print("feature shape: ", feature.shape)
                 feature = feature.transpose(1, 2)
-                # print("trans feature shape: ", feature.shape)
                 output = self.classifier(feature)
                 outputs.append(output)    # (B, L, H)
             else:

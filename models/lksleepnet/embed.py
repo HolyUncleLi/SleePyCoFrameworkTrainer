@@ -337,5 +337,5 @@ class CBAMEmbedding(nn.Module):
         # print("flatten out", x.shape)
         x = x.view(12, 20, 128)
         x = x + self.position_embedding(x)
-        # print("embed out", x.shape)
+        print("embed out", x.shape)
         return x
