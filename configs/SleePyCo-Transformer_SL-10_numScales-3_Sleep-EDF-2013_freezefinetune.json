@@ -15,14 +15,14 @@
     },
 
     "feature_pyramid": {
-        "dim": 64,
+        "dim": 80,
         "num_scales": 0
     },
 
     "classifier": {
-        "name": "Transformer",
-        "model_dim": 64,
-        "feedforward_dim": 64,
+        "name": "FGNN",
+        "model_dim": 80,
+        "feedforward_dim": 80,
         "pool": "attn",
         "dropout": false,
         "num_classes": 5,

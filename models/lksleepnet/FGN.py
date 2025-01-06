@@ -38,6 +38,11 @@ class FGN(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(self.hidden_size, self.pre_length)
         )
+
+        self.model_dim = 80
+        self.w_ha = nn.Linear(self.model_dim, self.model_dim, bias=True)
+        self.w_at = nn.Linear(self.model_dim, 1, bias=False)
+        self.head = nn.Linear(80, 5)
         self.to('cuda:0')
 
     def tokenEmb(self, x):
@@ -110,7 +115,9 @@ class FGN(nn.Module):
         return z
 
     def forward(self, x):
+
         x = x.permute(0, 2, 1).contiguous()
+        res = x
         B, N, L = x.shape
         # B*N*L ==> B*NL
         x = x.reshape(B, -1)
@@ -142,6 +149,10 @@ class FGN(nn.Module):
         x = x.reshape(B, N, -1)
         x = self.fc(x)
 
+        a_states = torch.tanh(self.w_ha(x))
+        alpha = torch.softmax(self.w_at(a_states), dim=1).view(x.size(0), 1, x.size(1))
+        x = torch.bmm(alpha, a_states).view(x.size(0), -1)
+        x = self.head(x)
         return x
 
 import argparse
@@ -150,7 +161,7 @@ parser.add_argument('--data', type=str, default='ECG', help='data set')
 parser.add_argument('--feature_size', type=int, default='140', help='feature size')
 parser.add_argument('--seq_length', type=int, default=80, help='inout length')
 parser.add_argument('--pre_length', type=int, default=80, help='predict length')
-parser.add_argument('--embed_size', type=int, default=64, help='hidden dimensions')
+parser.add_argument('--embed_size', type=int, default=80, help='hidden dimensions')
 parser.add_argument('--hidden_size', type=int, default=256, help='hidden dimensions')
 parser.add_argument('--train_epochs', type=int, default=100, help='train epochs')
 parser.add_argument('--batch_size', type=int, default=64, help='input data batch size')
@@ -164,14 +175,7 @@ parser.add_argument('--val_ratio', type=float, default=0.2)
 parser.add_argument('--device', type=str, default='cuda:0', help='device')
 
 args = parser.parse_args()
-'''
-model = FGN(pre_length=args.pre_length,
-            embed_size=args.embed_size,
-            feature_size=args.feature_size,
-            seq_length=args.seq_length,
-            hidden_size=args.hidden_size).cuda()
-print(model(torch.rand([2,20,128]).cuda()).shape)
-'''
+
 
 def getFGN():
     model = FGN(pre_length=args.pre_length,

@@ -4,6 +4,7 @@ from .embed import *
 from .CBAM import CBAM1d,CBAM2d
 from .CRF import CRF
 from .FGN import getFGN
+
 '''
 TimesNet 上下文时序编码
 '''
@@ -279,10 +280,9 @@ class ModernTCN(nn.Module):
         self.flatten = nn.Flatten()
 
         # times backbone
-        self.embed = ARFEmbedding(128, 64)
-        self.fgnn = getFGN()
-        self.times_drop = nn.Dropout(0.5)
-
+        self.embed = ARFEmbedding(128, 80)
+        # self.fgnn = getFGN()
+        # self.times_drop = nn.Dropout(0.5)
 
         # head
         self.n_vars = c_in
@@ -293,8 +293,8 @@ class ModernTCN(nn.Module):
             self.class_dropout = nn.Dropout(0.5)
             self.head_class2 = nn.Linear(self.featuredim, self.class_num)
 
-        self.mask = torch.ones([self.batchsize, self.seq_len]).to(bool)
-        self.crf = CRF(5)
+        # self.mask = torch.ones([self.batchsize, self.seq_len]).to(bool)
+        # self.crf = CRF(5)
 
     def forward_feature(self, x, te=None):
         B, M, L = x.shape
@@ -348,14 +348,16 @@ class ModernTCN(nn.Module):
         x = self.maxpool(x)
         # x = self.flatten(x)
         # x = x.view(self.batchsize, self.seq_len, self.cnndim)
-        x = self.embed(x, None, stage=2)
-        cnn_out = x
+        x = self.embed(x, None, stage=2).transpose(1,2)
 
+        '''
         # get period
+        cnn_out = x
         x = self.fgnn(x).transpose(1,2)
         x = self.times_drop(x)
         x = (x + cnn_out).transpose(1,2)
         # x = x.view(self.batchsize, 64, self.featuredim)
+        '''
 
         return [x]
 
