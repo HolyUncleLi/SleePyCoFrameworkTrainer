@@ -185,30 +185,51 @@ class Model(nn.Module):
         #                                    configs.dropout)
         self.layer = configs.e_layers
         self.layer_norm = nn.LayerNorm(configs.d_model)
+
+        '''
         if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
             # self.predict_linear = nn.Linear(
             #     self.seq_len, self.pred_len + self.seq_len)
             self.projection = nn.Linear(
                 configs.d_model, configs.c_out, bias=True)
+        '''
         self.dropout = nn.Dropout(0.5)
 
+        '''
+        # Atten
+        self.model_dim = 64
+        self.w_ha = nn.Linear(self.model_dim, self.model_dim, bias=True)
+        self.w_at = nn.Linear(self.model_dim, 1, bias=False)
+        self.head = nn.Linear(80, 5)
+        self.to('cuda:0')
+        '''
+
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
-        # embedding
-        # enc_out = self.enc_embedding(x_enc, None)  # [B,T,C]
         # print("times input: ", x_enc.shape)
+        # embedding
         enc_out = self.revin(x_enc, mode='norm')
-        # print("times enc: ", enc_out.shape)
+
         # TimesNet
         for i in range(self.layer):
             enc_out = self.model[i](enc_out)
             enc_out = self.layer_norm(enc_out)
-        # porject back
-        dec_out = self.projection(enc_out)
-        dec_out = self.revin(dec_out, mode='denorm')
-        # dec_out = self.dropout(dec_out)
-        return dec_out
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+        # porject back
+        x = enc_out
+        x = self.dropout(x)
+        '''
+        print(x.shape)
+        a_states = torch.tanh(self.w_ha(x))
+        alpha = torch.softmax(self.w_at(a_states), dim=1).view(x.size(0), 1, x.size(1))
+        x = torch.bmm(alpha, a_states).view(x.size(0), -1)
+        x = self.revin(x, mode='denorm')
+        x = self.dropout(x)
+        print(x.shape)
+        x = self.head(x)
+        '''
+        return x
+
+    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None, mask=None):
         dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
         return dec_out[:, -self.pred_len:, :]  # [B, L, D]
 
@@ -258,16 +279,15 @@ parser.add_argument('--mask_rate', type=float, default=0.25, help='mask ratio')
 parser.add_argument('--anomaly_ratio', type=float, default=0.25, help='prior anomaly ratio (%)')
 
 # model define
-dim = 64
 parser.add_argument('--top_k', type=int, default=5, help='for TimesBlock')
 parser.add_argument('--num_kernels', type=int, default=3, help='for Inception')
 parser.add_argument('--enc_in', type=int, default=0, help='encoder input size')
-parser.add_argument('--dec_in', type=int, default=dim, help='decoder input size')
-parser.add_argument('--c_out', type=int, default=dim, help='output size')
-parser.add_argument('--d_model', type=int, default=dim, help='dimension of model')
+parser.add_argument('--dec_in', type=int, default=80, help='decoder input size')
+parser.add_argument('--c_out', type=int, default=80, help='output size')
+parser.add_argument('--d_model', type=int, default=80, help='dimension of model')
 parser.add_argument('--e_layers', type=int, default=1, help='num of encoder layers')
 parser.add_argument('--d_layers', type=int, default=1, help='num of decoder layers')
-parser.add_argument('--d_ff', type=int, default=dim * 4, help='dimension of fcn')
+parser.add_argument('--d_ff', type=int, default=160, help='dimension of fcn')
 parser.add_argument('--moving_avg', type=int, default=25, help='window size of moving average')
 parser.add_argument('--distil', action='store_false',
                     help='whether to use distilling in encoder, using this argument means not using distilling',
@@ -345,5 +365,9 @@ args.use_gpu = True if torch.cuda.is_available() else False
 
 
 def getmodel():
+    model = Model(args)
+    return model
+
+def getTimes():
     model = Model(args)
     return model

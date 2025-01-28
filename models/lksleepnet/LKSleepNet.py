@@ -1,9 +1,10 @@
 from .ReConv_2 import *
 from .TimesNet_LK import getmodel
 from .embed import *
-from .CBAM import CBAM1d,CBAM2d
+from .CBAM import CBAM1d, CBAM2d
 from .CRF import CRF
 import numpy as np
+
 '''
 TimesNet 上下文时序编码
 '''
@@ -233,7 +234,7 @@ class ModernTCN(nn.Module):
         self.seq_len = 10
         self.channeldim = 128
         self.featuredim = self.seq_len * 8
-        self.embeddim = 64
+        self.embeddim = 80
         self.class_num = class_num
 
         # stem layer & down sampling layers
@@ -279,7 +280,7 @@ class ModernTCN(nn.Module):
         self.flatten = nn.Flatten()
 
         # times backbone
-        self.embed = ARFEmbedding(128, 64)
+        self.embed = ARFEmbedding(128, 80)
         # self.embed = CBAMEmbedding(128, 16)
         self.times_drop = nn.Dropout(0.5)
         self.timesNet = getmodel()
@@ -359,8 +360,9 @@ class ModernTCN(nn.Module):
         x = x + cnn_out
         # print("lksleepnet times shape: ", x.shape)
         # head
-        x = x.view(self.batchsize, 64, self.featuredim)
+        x = x.view(self.batchsize, 80, self.featuredim)
         # x = self.head_class2(x)
+        # print("lk net output", x.shape)
         '''
         x = x.reshape(self.batchsize, self.seq_len, 5)
         if tags is not None:

@@ -2,6 +2,7 @@ import math
 import torch
 import torch.nn as nn
 from .lksleepnet.FGN import getFGN
+from .lksleepnet.TimesNet_LK import getTimes
 
 feature_len_dict = {
     'SleePyCo': [[5, 24, 120], [10, 48, 240], [15, 72, 360], [20, 96, 480], [24, 120, 600], [29, 144, 720], [34, 168, 840], [39, 192, 960], [44, 216, 1080], [48, 240, 1200]],
@@ -216,15 +217,15 @@ class Transformer(nn.Module):
         self.fc = nn.Linear(self.model_dim, self.cfg['num_classes'])
 
     def forward(self, x):
-        print("transformer input shape: ",x.shape)
+        # print("transformer input shape: ",x.shape)
         x = x.transpose(0, 1)
-        print("transformer trans shape: ", x.shape)
+        # print("transformer trans shape: ", x.shape)
         x = self.pos_encoding(x)
-        print("transformer encode shape: ", x.shape)
+        # print("transformer encode shape: ", x.shape)
         x = self.transformer(x)
-        print("transformer feature shape: ", x.shape)
+        # print("transformer feature shape: ", x.shape)
         x = x.transpose(0, 1)
-        print("transformer feature trans shape: ", x.shape)
+        # print("transformer feature trans shape: ", x.shape)
 
         if self.pool == 'mean':
             x = x.mean(dim=1)
@@ -234,7 +235,7 @@ class Transformer(nn.Module):
             a_states = torch.tanh(self.w_ha(x))
             alpha = torch.softmax(self.w_at(a_states), dim=1).view(x.size(0), 1, x.size(1))
             x = torch.bmm(alpha, a_states).view(x.size(0), -1)
-            print("transformer attn shape: ", x.shape)
+            # print("transformer attn shape: ", x.shape)
         elif self.pool == None:
             x = x
         else:
@@ -242,9 +243,9 @@ class Transformer(nn.Module):
 
         if self.cfg['dropout']:
             x = self.dropout(x)
-        print("transformer output shape: ", x.shape)
+        # print("transformer output shape: ", x.shape)
         out = self.fc(x)
-        print("transformer out shape: ", out.shape)
+        # print("transformer out shape: ", out.shape)
         return out
 
 
@@ -274,5 +275,8 @@ def get_classifier(config):
 
     elif classifier_name == 'FGNN':
         classifier = getFGN()
+
+    elif classifier_name == 'Times':
+        classifier = getTimes()
     
     return classifier

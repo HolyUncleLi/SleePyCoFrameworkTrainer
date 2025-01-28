@@ -10,8 +10,9 @@ import warnings
 import numpy as np
 from torch.optim import lr_scheduler
 
-# from .LKSleepNet import *
-from .LKGNN import *
+# from .LKTinySleepNet import *
+from .LKSleepNet import *
+# from .LKGNN import *
 
 parser = argparse.ArgumentParser(description='ModernTCN')
 

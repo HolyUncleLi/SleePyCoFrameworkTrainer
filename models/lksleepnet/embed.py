@@ -272,7 +272,7 @@ class ARFEmbedding(nn.Module):
         super(ARFEmbedding, self).__init__()
         self.inplanes = c_in
         self.ARF = self._make_layer(SEBasicBlock, d_model, 1)
-        self.position_embedding = PositionalEmbedding(d_model=c_in)
+        # self.position_embedding = PositionalEmbedding(d_model=c_in)
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(p=dropout)
 
