@@ -225,7 +225,7 @@ def summarize_result(config, fold, y_true, y_pred, save=True):
     print(colored(' A', 'cyan') + ': Actual Class, ' + colored('P', 'green') + ': Predicted Class' + '\n\n')
     
     if save:
-        with open(os.path.join('results', config['name'] + '.txt'), 'w') as f:
+        with open(os.path.join('results', 'fold_'+str(fold) + '.txt'), 'w') as f:
             f.write(
                 str(fold) + ' ' +
                 str(round(result_dict['accuracy']*100, 1)) + ' ' + 
@@ -236,6 +236,19 @@ def summarize_result(config, fold, y_true, y_pred, save=True):
                 str(round(result_dict['2.0']['f1-score']*100, 1)) + ' ' +
                 str(round(result_dict['3.0']['f1-score']*100, 1)) + ' ' +
                 str(round(result_dict['4.0']['f1-score']*100, 1)) + ' '
+            )
+
+        with open(os.path.join('results', 'total_results.txt'), 'a') as f:
+            f.write(
+                str(fold) + ' ' +
+                str(round(result_dict['accuracy']*100, 1)) + ' ' +
+                str(round(result_dict['macro avg']['f1-score']*100, 1)) + ' ' +
+                str(round(kappa, 3)) + ' ' +
+                str(round(result_dict['0.0']['f1-score']*100, 1)) + ' ' +
+                str(round(result_dict['1.0']['f1-score']*100, 1)) + ' ' +
+                str(round(result_dict['2.0']['f1-score']*100, 1)) + ' ' +
+                str(round(result_dict['3.0']['f1-score']*100, 1)) + ' ' +
+                str(round(result_dict['4.0']['f1-score']*100, 1)) + '\n'
             )
 
 
