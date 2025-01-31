@@ -13,7 +13,7 @@ class EEGDataLoader(Dataset):
         self.set = set
         self.fold = fold
 
-        self.sr = 100        
+        self.sr = 125
         self.dset_cfg = config['dataset']
         
         self.root_dir = self.dset_cfg['root_dir']
@@ -59,6 +59,7 @@ class EEGDataLoader(Dataset):
                 input_b = torch.from_numpy(input_b).float()
                 inputs = [input_a, input_b]
             elif self.training_mode in ['scratch', 'fullyfinetune', 'freezefinetune']:
+                # print(inputs.shape)
                 inputs = inputs.reshape(1, n_sample)
                 inputs = torch.from_numpy(inputs).float()
             else:

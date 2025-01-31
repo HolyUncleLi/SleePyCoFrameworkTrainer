@@ -21,8 +21,8 @@
 
     "classifier": {
         "name": "Transformer",
-        "model_dim": 48,
-        "feedforward_dim": 48,
+        "model_dim": 64,
+        "feedforward_dim": 64,
         "pool": "attn",
         "dropout": false,
         "num_classes": 5,
