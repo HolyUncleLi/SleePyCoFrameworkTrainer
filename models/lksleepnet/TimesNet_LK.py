@@ -176,6 +176,9 @@ class Model(nn.Module):
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
 
+        # self.pre_layer = nn.Conv1d(80, 64 , 3, 1, 1)
+        self.pre_layer = nn.Linear(80, 64)
+
         # RevIN
         self.revin = RevIN(num_features=configs.d_model, eps=1e-5, affine=True)
 
@@ -206,7 +209,8 @@ class Model(nn.Module):
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         # print("times input: ", x_enc.shape)
-        # embedding
+        x_enc = self.pre_layer(x_enc)
+
         enc_out = self.revin(x_enc, mode='norm')
 
         # TimesNet
@@ -282,9 +286,9 @@ parser.add_argument('--anomaly_ratio', type=float, default=0.25, help='prior ano
 parser.add_argument('--top_k', type=int, default=5, help='for TimesBlock')
 parser.add_argument('--num_kernels', type=int, default=3, help='for Inception')
 parser.add_argument('--enc_in', type=int, default=0, help='encoder input size')
-parser.add_argument('--dec_in', type=int, default=80, help='decoder input size')
-parser.add_argument('--c_out', type=int, default=80, help='output size')
-parser.add_argument('--d_model', type=int, default=80, help='dimension of model')
+parser.add_argument('--dec_in', type=int, default=0, help='decoder input size')
+parser.add_argument('--c_out', type=int, default=0, help='output size')
+parser.add_argument('--d_model', type=int, default=64, help='dimension of model')
 parser.add_argument('--e_layers', type=int, default=1, help='num of encoder layers')
 parser.add_argument('--d_layers', type=int, default=1, help='num of decoder layers')
 parser.add_argument('--d_ff', type=int, default=256, help='dimension of fcn')

@@ -262,7 +262,7 @@ class ModernTCN(nn.Module):
         # FTCNN
         self.ftcnn_channels = dims[0]
         self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
-                                 padding=4, featureDim=3016)
+                                 padding=4, featureDim=30016)
         self.ftcnn_downsample_layer = nn.Sequential(
             nn.BatchNorm1d(self.ftcnn_channels),
             nn.Conv1d(self.ftcnn_channels, self.ftcnn_channels, kernel_size=patch_size, stride=patch_stride),
@@ -284,6 +284,7 @@ class ModernTCN(nn.Module):
         # self.embed = CBAMEmbedding(128, 16)
         self.times_drop = nn.Dropout(0.5)
         self.timesNet = getmodel()
+        self.shortcut = nn.Linear(80, 64)
 
         # head
         self.n_vars = c_in
@@ -292,7 +293,7 @@ class ModernTCN(nn.Module):
         if self.task_name == 'classification':
             self.act_class = F.gelu
             self.class_dropout = nn.Dropout(0.5)
-            self.head_class2 = nn.Linear(self.featuredim, self.class_num)
+            self.head_class2 = nn.Linear(64, self.class_num)
 
         self.mask = torch.ones([self.batchsize, self.seq_len]).to(bool)
         self.crf = CRF(5)
@@ -329,6 +330,7 @@ class ModernTCN(nn.Module):
                 x += ftcnn_res
             '''
 
+
             x = self.stages[i](x)
         return x
 
@@ -357,10 +359,10 @@ class ModernTCN(nn.Module):
         # get period
         x = self.timesNet(x, None, None, None)
         x = self.times_drop(x)
-        x = x + cnn_out
+        x = x + self.shortcut(cnn_out)
         # print("lksleepnet times shape: ", x.shape)
         # head
-        x = x.view(self.batchsize, 80, self.featuredim)
+        x = x.view(self.batchsize, 80, 64)
         # x = self.head_class2(x)
         # print("lk net output", x.shape)
         '''
