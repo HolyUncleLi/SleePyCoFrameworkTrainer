@@ -217,6 +217,7 @@ class LayerNorm(nn.Module):
         self.a_2 = nn.Parameter(torch.ones(features))
         self.b_2 = nn.Parameter(torch.zeros(features))
         self.eps = eps
+        print("features shape: ",features)
 
     def forward(self, x):
         mean = x.mean(-1, keepdim=True)
@@ -320,8 +321,11 @@ class AttnSleep(nn.Module):
         self.fc = nn.Linear(d_model * afr_reduced_cnn_size, num_classes)
 
     def forward(self, x):
+        print("input: ",x.shape)
         x_feat = self.mrcnn(x)
+        print("feat shape: ", x_feat.shape)
         encoded_features = self.tce(x_feat)
+        print("encode shape: ", encoded_features.shape)
         encoded_features = encoded_features.contiguous().view(encoded_features.shape[0], -1)
         final_output = self.fc(encoded_features)
         return final_output
@@ -400,5 +404,5 @@ class MRCNN_SHHS(nn.Module):
 
 '''
 model = AttnSleep().cuda()
-print(model(torch.rand([2,1,3000]).cuda()).shape)
+print(model(torch.rand([2,1,30000]).cuda()).shape)
 '''
