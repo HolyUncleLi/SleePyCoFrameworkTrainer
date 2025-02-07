@@ -9,7 +9,7 @@
     },
 
     "backbone": {
-        "name": "LKSleepNet",
+        "name": "AttnSleepNet",
         "init_weights": false,
         "dropout": false
     },
