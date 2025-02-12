@@ -12,6 +12,8 @@ from loader import EEGDataLoader
 from train_mtcl import OneFoldTrainer
 from models.main_model import MainModel
 
+warnings.filterwarnings("ignore")
+
 
 class OneFoldEvaluator(OneFoldTrainer):
     def __init__(self, args, fold, config):
@@ -66,8 +68,8 @@ def main():
     parser.add_argument('--seed', type=int, default=42, help='random seed')
     parser.add_argument('--gpu', type=str, default="0", help='gpu id')
     parser.add_argument('--config', type=str,
-                        default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
-                        # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json',
+                        # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
+                        default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json',
                         help='config file path')
     args = parser.parse_args()
 
@@ -80,6 +82,7 @@ def main():
 
     Y_true = np.zeros(0)
     Y_pred = np.zeros((0, config['classifier']['num_classes']))
+    cm = []
 
     for fold in range(1, config['dataset']['num_splits'] + 1):
         evaluator = OneFoldEvaluator(args, fold, config)
@@ -88,7 +91,27 @@ def main():
         Y_pred = np.concatenate([Y_pred, y_pred])
 
         summarize_result(config, fold, Y_true, Y_pred)
+        # print(Y_true.shape, Y_pred.shape)
+        # print(type(Y_true), type(Y_pred))
+        # print(type(Y_true[0]), type(Y_pred[0][0]))
+        # print(Y_true[0], Y_pred.argmax(axis=1)[0])
 
+        cm.append(confusion_matrix(Y_true.astype(int), Y_pred.argmax(axis=1)))
+
+    # 绘制平均混淆矩阵
+    mean_cm = np.mean(cm, axis=0)
+    cm_plot(mean_cm, './results/cm.svg')
+    '''
+    
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(mean_cm, annot=True, fmt='.2f', cmap='Blues', xticklabels=["wake", "N1", "N2", "N3", "REM"],
+                yticklabels=["wake", "N1", "N2", "N3", "REM"])
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('Confusion Matrix')
+    plt.savefig('./results/confusion_matrix.png', bbox_inches='tight')
+    plt.show()
+    '''
 
 if __name__ == "__main__":
     main()

@@ -8,7 +8,9 @@ import numpy as np
 import sklearn.metrics as skmet
 from terminaltables import SingleTable
 from termcolor import colored
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 # _, term_width = os.popen('stty size', 'r').read().split()
 # term_width = int(term_width)
@@ -238,6 +240,7 @@ def summarize_result(config, fold, y_true, y_pred, save=True):
                 str(round(result_dict['4.0']['f1-score']*100, 1)) + ' '
             )
 
+        # 保存每折的结果
         with open(os.path.join('results', 'total_results.txt'), 'a') as f:
             f.write(
                 str(fold) + ' ' +
@@ -250,6 +253,44 @@ def summarize_result(config, fold, y_true, y_pred, save=True):
                 str(round(result_dict['3.0']['f1-score']*100, 1)) + ' ' +
                 str(round(result_dict['4.0']['f1-score']*100, 1)) + '\n'
             )
+
+
+def cm_plot(cm, savepath):
+    cm_new = np.zeros(shape=[5, 5])
+    for x in range(5):
+        t = cm.sum(axis=1)[x]
+        for y in range(5):
+            cm_new[x][y] = round(cm[x][y] / t * 100, 2)
+
+    plt.matshow(cm_new, cmap=plt.cm.Blues)
+
+    plt.colorbar()
+    x_numbers = []
+    y_numbers = []
+    for x in range(5):
+        y_numbers.append(cm.sum(axis=1)[x])
+        x_numbers.append(cm.sum(axis=0)[x])
+        for y in range(5):
+            percent = format(cm_new[x, y] * 100 / cm_new.sum(axis=1)[x], ".2f")
+
+            plt.annotate(format(cm_new[x, y] * 100 / cm_new.sum(axis=1)[x], ".2f"), xy=(y, x),
+                         horizontalalignment='center',
+                         verticalalignment='center', fontsize=10)
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    # plt.title('confusion matrix')
+
+    y_stage = ["W\n(" + str(y_numbers[0]) + ")", "N1\n(" + str(y_numbers[1]) + ")", "N2\n(" + str(y_numbers[2]) + ")",
+               "N3\n(" + str(y_numbers[3]) + ")", "REM\n(" + str(y_numbers[4]) + ")"]
+    x_stage = ["W\n(" + str(x_numbers[0]) + ")", "N1\n(" + str(x_numbers[1]) + ")", "N2\n(" + str(x_numbers[2]) + ")",
+               "N3\n(" + str(x_numbers[3]) + ")", "REM\n(" + str(x_numbers[4]) + ")"]
+    y = [0, 1, 2, 3, 4]
+    plt.xticks(y, x_stage)
+    plt.yticks(y, y_stage)
+    plt.tight_layout()
+    plt.savefig(savepath, bbox_inches='tight')
+    plt.close()
 
 
 def set_random_seed(seed_value, use_cuda=True):
