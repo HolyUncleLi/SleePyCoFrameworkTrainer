@@ -271,7 +271,7 @@ def get_classifier(config):
         classifier = AttGRU(config)
 
     elif classifier_name == 'Transformer':
-        classifier = Transformer(config, nheads=6, num_encoder_layers=6, pool=config['classifier']['pool'])
+        classifier = Transformer(config, nheads=8, num_encoder_layers=6, pool=config['classifier']['pool'])
 
     elif classifier_name == 'FGNN':
         classifier = getFGN()

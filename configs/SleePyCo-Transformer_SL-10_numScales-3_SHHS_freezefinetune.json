@@ -9,7 +9,7 @@
     },
 
     "backbone": {
-        "name": "LKSleepNet",
+        "name": "TinySleepNet",
         "init_weights": false,
         "dropout": false
     },
@@ -21,8 +21,8 @@
 
     "classifier": {
         "name": "Transformer",
-        "model_dim": 36,
-        "feedforward_dim": 36,
+        "model_dim": 96,
+        "feedforward_dim": 96,
         "pool": "attn",
         "dropout": false,
         "num_classes": 5,
