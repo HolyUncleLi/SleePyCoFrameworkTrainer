@@ -258,7 +258,6 @@ class ModernTCN(nn.Module):
         self.patch_stride = patch_stride
         self.downsample_ratio = downsample_ratio
 
-        '''
         # FTCNN
         self.ftcnn_channels = dims[0]
         self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
@@ -267,7 +266,6 @@ class ModernTCN(nn.Module):
             nn.BatchNorm1d(self.ftcnn_channels),
             nn.Conv1d(self.ftcnn_channels, self.ftcnn_channels, kernel_size=patch_size, stride=patch_stride),
         )
-        '''
 
         # cnn backbone
         self.num_stage = len(num_blocks)
@@ -312,8 +310,8 @@ class ModernTCN(nn.Module):
                     pad_len = self.patch_size - self.patch_stride
                     pad = x[:,:,-1:].repeat(1,1, pad_len)
                     x = torch.cat([x,pad],dim=-1)
-                # ftcnn_res = self.ftcnn(x)
-                # ftcnn_res = self.ftcnn_downsample_layer(ftcnn_res).unsqueeze(1)
+                ftcnn_res = self.ftcnn(x)
+                ftcnn_res = self.ftcnn_downsample_layer(ftcnn_res).unsqueeze(1)
 
             else:
                 if N % self.downsample_ratio != 0:
@@ -325,11 +323,8 @@ class ModernTCN(nn.Module):
             _, D_, N_ = x.shape
             x = x.reshape(B, M, D_, N_)
 
-            '''
             if i == 0:
                 x += ftcnn_res
-            '''
-
 
             x = self.stages[i](x)
         return x
