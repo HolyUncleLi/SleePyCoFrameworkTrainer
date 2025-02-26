@@ -138,6 +138,7 @@ setting = '{}_{}_sl{}_pl{}_dim{}_nb{}_lk{}_sk{}_ffr{}_ps{}_str{}_multi{}_merged_
 def getmodel():
     return Model(args)
 
+
 '''
 model = Model(args).cuda()
 print(model(torch.rand(10, 1, 15000).cuda()).shape)

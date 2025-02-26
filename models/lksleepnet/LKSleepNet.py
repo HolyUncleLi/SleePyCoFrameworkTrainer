@@ -261,10 +261,22 @@ class ModernTCN(nn.Module):
         # FTCNN
         self.ftcnn_channels = dims[0]
         self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
-                                 padding=4, featureDim=30016)
+                                 padding=4, featureDim=3008)
+
+        '''
         self.ftcnn_downsample_layer = nn.Sequential(
             nn.BatchNorm1d(self.ftcnn_channels),
             nn.Conv1d(self.ftcnn_channels, self.ftcnn_channels, kernel_size=patch_size, stride=patch_stride),
+        )
+        '''
+        self.ftcnn_downsample = nn.Sequential(
+            nn.Conv1d(self.ftcnn_channels, 32, kernel_size=1, stride=1),
+
+            nn.BatchNorm1d(32),
+            nn.Conv1d(32, 32, kernel_size=patch_size, stride=patch_stride),
+            nn.GELU(),
+
+            nn.Conv1d(32, self.ftcnn_channels, kernel_size=1, stride=1),
         )
 
         # cnn backbone
@@ -298,7 +310,7 @@ class ModernTCN(nn.Module):
 
     def forward_feature(self, x, te=None):
         B, M, L = x.shape
-        # ftcnn_res = torch.rand([]).cuda()
+        ftcnn_res = torch.rand([]).cuda()
         x = x.unsqueeze(-2)
 
         for i in range(self.num_stage):
@@ -308,11 +320,17 @@ class ModernTCN(nn.Module):
                 if self.patch_size != self.patch_stride:
                     # stem layer padding
                     pad_len = self.patch_size - self.patch_stride
-                    pad = x[:,:,-1:].repeat(1,1, pad_len)
-                    x = torch.cat([x,pad],dim=-1)
-                ftcnn_res = self.ftcnn(x)
-                ftcnn_res = self.ftcnn_downsample_layer(ftcnn_res).unsqueeze(1)
+                    pad = x[:, :, -1:].repeat(1, 1, pad_len)
+                    x = torch.cat([x, pad], dim=-1)
 
+                # ftcnn
+                ftcnn_res = self.ftcnn(x[:, :, 0:30000].reshape(self.batchsize * self.seq_len, 1, 3000))
+                # padding
+                ftcnn_res = ftcnn_res.view(self.batchsize, self.ftcnn_channels,-1)
+                pad_len = 8
+                ftcnn_res = torch.cat([ftcnn_res, ftcnn_res[:, :, -pad_len:]], dim=-1)
+                # downsample
+                ftcnn_res = self.ftcnn_downsample(ftcnn_res).unsqueeze(1)
             else:
                 if N % self.downsample_ratio != 0:
                     pad_len = self.downsample_ratio - (N % self.downsample_ratio)

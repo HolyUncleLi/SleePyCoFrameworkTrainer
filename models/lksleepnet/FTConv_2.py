@@ -7,9 +7,6 @@ from torch import Tensor, nn
 from torch.fft import irfftn, rfftn
 from math import ceil, floor
 
-'''
-
-'''
 
 def complex_matmul(a: Tensor, b: Tensor, groups: int = 1) -> Tensor:
     """Multiplies two complex-valued tensors."""
@@ -45,7 +42,7 @@ def to_ntuple(val: Union[int, Iterable[int]], n: int) -> Tuple[int, ...]:
         return n * (val,)
 
 
-def initMAT(dim, start=0,end=0):
+def initMAT(dim, start=0, end=0):
 
     fourier_basis = np.fft.rfft(np.eye(dim))
 
@@ -114,7 +111,6 @@ def fft_conv(
     ]
     padded_kernel = f.pad(kernel, kernel_padding)
 
-    # signal_fr = torch.matmul(signal.to(torch.complex64), fourier_basis)
     signal_fr_1 = torch.matmul(signal.to(torch.complex64), fourier_basis_1)
     signal_fr_2 = torch.matmul(signal.to(torch.complex64), fourier_basis_2)
     signal_fr_3 = torch.matmul(signal.to(torch.complex64), fourier_basis_3)
@@ -123,14 +119,16 @@ def fft_conv(
 
     kernel_fr = rfftn(padded_kernel.float(), dim=tuple(range(2, signal.ndim)))
 
-
     # 频域乘法结果做逆变换
     kernel_fr.imag *= -1
+
     output_fr_1 = complex_matmul(signal_fr_1, kernel_fr[0:kernel_fr.shape[0]//5 * 1], groups=groups)
     output_fr_2 = complex_matmul(signal_fr_2, kernel_fr[kernel_fr.shape[0] // 5 * 1:kernel_fr.shape[0] // 5 * 2], groups=groups)
     output_fr_3 = complex_matmul(signal_fr_3, kernel_fr[kernel_fr.shape[0] // 5 * 2:kernel_fr.shape[0] // 5 * 3], groups=groups)
     output_fr_4 = complex_matmul(signal_fr_4, kernel_fr[kernel_fr.shape[0] // 5 * 3:kernel_fr.shape[0] // 5 * 4], groups=groups)
     output_fr_5 = complex_matmul(signal_fr_5, kernel_fr[kernel_fr.shape[0] // 5 * 4:kernel_fr.shape[0]], groups=groups)
+
+    # print(signal_fr_1.shape, output_fr_1.shape, kernel_fr.shape)
 
     output_fr = torch.cat((output_fr_1, output_fr_2), dim=1)
     output_fr = torch.cat((output_fr, output_fr_3), dim=1)
@@ -227,11 +225,21 @@ class _FTConv(nn.Module):
 FTConv1d = partial(_FTConv, ndim=1)
 
 '''
-x = torch.rand([64,1,750])
-a = nn.Conv1d(in_channels=1, out_channels=128, kernel_size=5, stride=1, groups=1,padding=2)
-b = FTConv1d(in_channels=1, out_channels=128, kernel_size=5, stride=1, groups=1,padding=2, featureDim=754)
+x = torch.rand([640, 1, 3000]).cuda()
+ftcnn = FTConv1d(in_channels=1, out_channels=64, kernel_size=9, stride=1,
+                                 padding=4, featureDim=3008).cuda()
+print(ftcnn(x).shape)
+total_params = sum(p.numel() for p in ftcnn.parameters())
+print(f"Total number of parameters: {total_params}")
 
-print(a.weight.data.shape,a.bias.data.shape)
-print(b.weight.data.shape,b.bias.data.shape)
-b(x)
+
+ftcnn_down = nn.Sequential(
+        nn.Conv1d(64, 32, kernel_size=1, stride=1),
+        nn.BatchNorm1d(32),
+        nn.Conv1d(32, 32, kernel_size=16, stride=8),
+        nn.GELU(),
+        nn.Conv1d(32, 64, kernel_size=1, stride=1),
+    )
+total_params = sum(p.numel() for p in ftcnn_down.parameters())
+print(f"Total number of parameters: {total_params}")
 '''
