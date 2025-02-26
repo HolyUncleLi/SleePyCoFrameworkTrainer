@@ -186,4 +186,10 @@ def getFGN():
     return model.cuda()
 
 
-
+'''
+model = getFGN()
+x = torch.rand([64, 80, 80]).cuda()
+print(model(x).shape)
+total_params = sum(p.numel() for p in model.parameters())
+print(f"Total number of parameters: {total_params}")
+'''

@@ -273,8 +273,8 @@ class ModernTCN(nn.Module):
             nn.Conv1d(self.ftcnn_channels, 32, kernel_size=1, stride=1),
 
             nn.BatchNorm1d(32),
-            nn.Conv1d(32, 32, kernel_size=patch_size, stride=patch_stride),
             nn.GELU(),
+            nn.Conv1d(32, 32, kernel_size=patch_size, stride=patch_stride),
 
             nn.Conv1d(32, self.ftcnn_channels, kernel_size=1, stride=1),
         )
