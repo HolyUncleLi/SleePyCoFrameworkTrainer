@@ -10,7 +10,7 @@ from .tinysleepnet import TinySleepNetFeature
 from .attnsleepnet import AttnSleep
 from .lksleepnet.TCN_Model import getmodel
 from .classifiers import get_classifier
-
+from .MSA_CNN import getmsacnn
 
 last_chn_dict = {
     'SleePyCo': 256,
@@ -48,6 +48,8 @@ class MainModel(nn.Module):
             self.feature = AttnSleep()
         elif self.bb_cfg['name'] == 'LKSleepNet':
             self.feature = getmodel()
+        elif self.bb_cfg['name'] == 'MSACNN':
+            self.feature = getmsacnn()
         elif self.bb_cfg['name'] == 'LKFGNN':
             print('_')
         else:

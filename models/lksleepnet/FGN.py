@@ -38,6 +38,8 @@ class FGN(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(self.hidden_size, self.pre_length)
         )
+        print("w: ",self.w1.shape,self.w2.shape,self.w3.shape)
+        print("b: ", self.b1.shape, self.b2.shape, self.b3.shape)
 
         self.model_dim = 80
         self.w_ha = nn.Linear(self.model_dim, self.model_dim, bias=True)
@@ -61,6 +63,7 @@ class FGN(nn.Module):
 
         o3_real = torch.zeros(x.shape, device=x.device)
         o3_imag = torch.zeros(x.shape, device=x.device)
+
 
         o1_real = F.relu(
             torch.einsum('bli,ii->bli', x.real, self.w1[0]) - \
@@ -122,18 +125,19 @@ class FGN(nn.Module):
         # B*N*L ==> B*NL
         x = x.reshape(B, -1)
         # embedding B*NL ==> B*NL*D
+        print("input: ", x.shape)
         x = self.tokenEmb(x)
-
+        print("token: ", x.shape)
         # FFT B*NL*D ==> B*NT/2*D
         x = torch.fft.rfft(x, dim=1, norm='ortho')
-
+        print("fft1: ",x.shape)
         x = x.reshape(B, (N*L)//2+1, self.frequency_size)
-
+        print("reshape: ", x.shape)
         bias = x
 
         # FourierGNN
         x = self.fourierGC(x, B, N, L)
-
+        print("gnn output: ",x.shape)
         x = x + bias
 
         x = x.reshape(B, (N*L)//2+1, self.embed_size)
