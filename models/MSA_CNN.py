@@ -235,7 +235,7 @@ class MSA_CNN(nn.Module):
             out_dim = config['embedding_dim']
         # average across time
         self.time_average = Mean(dim=2)
-        self.maxpool = nn.AdaptiveMaxPool1d(80)
+        self.avgpool = nn.AdaptiveAvgPool1d(80)
 
         # fully connected layer and softmax
         self.fc = nn.Linear(out_dim, config['classes'])
@@ -258,7 +258,7 @@ class MSA_CNN(nn.Module):
             if self.config.get('access_attention_weights', False):
                 return x  # optional: return for analysis
         # x = self.time_average(x)
-        x = self.maxpool(x).transpose(1,2)
+        x = self.avgpool(x).transpose(1, 2)
         # x = self.fc(x)
         # return self.softmax(x)
         return [x]
