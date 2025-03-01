@@ -9,7 +9,7 @@
     },
 
     "backbone": {
-        "name": "MSACNN",
+        "name": "LKSleepNet",
         "init_weights": false,
         "dropout": false
     },

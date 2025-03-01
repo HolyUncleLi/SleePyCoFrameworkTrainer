@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from .FTConv_2 import *
+from .FTConv_3 import *
+
 
 class FTReConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size1=51, kernel_size2=5,kernel_size3=5, stride=1, groups=1, padding=0):

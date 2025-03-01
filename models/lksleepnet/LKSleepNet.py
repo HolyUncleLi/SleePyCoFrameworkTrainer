@@ -260,14 +260,25 @@ class ModernTCN(nn.Module):
 
         # FTCNN
         self.ftcnn_channels = dims[0]
-        self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
-                                 padding=4, featureDim=3008)
+        # self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
+        #                          padding=4, featureDim=3008)
 
+        self.ftcnn_1 = FTConv1d(in_channels=1, out_channels=8, kernel_size=31, stride=1, padding=31//2, start=0, end=4)
+        self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=8, kernel_size=15, stride=1, padding=15//2, start=4, end=8)
+        self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=8, kernel_size=9, stride=1, padding=9//2, start=8, end=12)
+        self.ftcnn_4 = FTConv1d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=5//2, start=12, end=16)
+        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=3//2, start=16, end=32)
+
+        self.ftcnn_downsample = nn.Sequential(
+            nn.BatchNorm1d(64),
+            nn.AdaptiveAvgPool1d(3750),
+        )
         '''
-        self.ftcnn_downsample_layer = nn.Sequential(
+        self.ftcnn_downsample = nn.Sequential(
             nn.BatchNorm1d(self.ftcnn_channels),
             nn.Conv1d(self.ftcnn_channels, self.ftcnn_channels, kernel_size=patch_size, stride=patch_stride),
         )
+        '''
         '''
         self.ftcnn_downsample = nn.Sequential(
             nn.Conv1d(self.ftcnn_channels, 32, kernel_size=1, stride=1),
@@ -278,6 +289,7 @@ class ModernTCN(nn.Module):
 
             nn.Conv1d(32, self.ftcnn_channels, kernel_size=1, stride=1),
         )
+        '''
 
         # cnn backbone
         self.num_stage = len(num_blocks)
@@ -286,13 +298,13 @@ class ModernTCN(nn.Module):
             layer = Stage(ffn_ratio, num_blocks[stage_idx], large_size[stage_idx], small_size[stage_idx], dmodel=dims[stage_idx],
                           dw_model=dw_dims[stage_idx], nvars=nvars, small_kernel_merged=small_kernel_merged, drop=backbone_dropout)
             self.stages.append(layer)
-        self.maxpool = nn.AdaptiveMaxPool1d(self.seq_len * 8)
+        self.avgpool = nn.AdaptiveAvgPool1d(self.seq_len * 8)
         self.flatten = nn.Flatten()
 
         # times backbone
         self.embed = ARFEmbedding(128, 80)
         # self.embed = CBAMEmbedding(128, 16)
-        self.times_drop = nn.Dropout(0.5)
+        self.times_drop = nn.Dropout(0.1)
         self.timesNet = getmodel()
         self.shortcut = nn.Linear(80, 64)
 
@@ -300,6 +312,7 @@ class ModernTCN(nn.Module):
         self.n_vars = c_in
         self.individual = individual
 
+        '''
         if self.task_name == 'classification':
             self.act_class = F.gelu
             self.class_dropout = nn.Dropout(0.5)
@@ -307,6 +320,7 @@ class ModernTCN(nn.Module):
 
         self.mask = torch.ones([self.batchsize, self.seq_len]).to(bool)
         self.crf = CRF(5)
+        '''
 
     def forward_feature(self, x, te=None):
         B, M, L = x.shape
@@ -324,12 +338,22 @@ class ModernTCN(nn.Module):
                     x = torch.cat([x, pad], dim=-1)
 
                 # ftcnn
+                '''
                 ftcnn_res = self.ftcnn(x[:, :, 0:30000].reshape(self.batchsize * self.seq_len, 1, 3000))
                 # padding
-                ftcnn_res = ftcnn_res.view(self.batchsize, self.ftcnn_channels,-1)
+                ftcnn_res = ftcnn_res.view(self.batchsize, self.ftcnn_channels, -1)
                 pad_len = 8
                 ftcnn_res = torch.cat([ftcnn_res, ftcnn_res[:, :, -pad_len:]], dim=-1)
                 # downsample
+                print(ftcnn_res.shape)
+                ftcnn_res = self.ftcnn_downsample(ftcnn_res).unsqueeze(1)
+                '''
+                ftcnn_res_1 = self.ftcnn_1(x)
+                ftcnn_res_2 = self.ftcnn_2(x)
+                ftcnn_res_3 = self.ftcnn_3(x)
+                ftcnn_res_4 = self.ftcnn_4(x)
+                ftcnn_res_5 = self.ftcnn_5(x)
+                ftcnn_res = torch.cat([ftcnn_res_1, ftcnn_res_2, ftcnn_res_3, ftcnn_res_4, ftcnn_res_5], dim=1)
                 ftcnn_res = self.ftcnn_downsample(ftcnn_res).unsqueeze(1)
             else:
                 if N % self.downsample_ratio != 0:
@@ -347,21 +371,12 @@ class ModernTCN(nn.Module):
             x = self.stages[i](x)
         return x
 
-    def classification1(self, x):
-        x = self.forward_feature(x, te=None).squeeze()
-        x = self.act_class(x)
-        x = self.class_dropout(x)
-        x = self.maxpool(x)
-        x = x.contiguous().view(self.batchsize * self.seq_len, self.cnndim)
-        x = self.head_class1(x)
-        return x
-
     def classification2(self, x, tags=None):
-        # cnn
+        # lkcnn backbone
         x = self.forward_feature(x, te=None).squeeze()
         # x = self.act_class(x)
         # x = self.class_dropout(x)
-        x = self.maxpool(x)
+        x = self.avgpool(x)
         # x = self.flatten(x)
         # x = x.view(self.batchsize, self.seq_len, self.cnndim)
         # print("lksleepnet cnn shape: ", x.shape)
@@ -374,6 +389,7 @@ class ModernTCN(nn.Module):
         x = self.times_drop(x)
         x = x + self.shortcut(cnn_out)
         # print("lksleepnet times shape: ", x.shape)
+
         # head
         x = x.view(self.batchsize, 80, 64)
         # x = self.head_class2(x)
@@ -390,10 +406,7 @@ class ModernTCN(nn.Module):
         return [x]
 
     def forward(self, x, tags=None, pre_stage=2):
-        if pre_stage == 1:
-            x = self.classification1(x)
-        elif pre_stage == 2:
-            x = self.classification2(x, tags=tags)
+        x = self.classification2(x, tags=tags)
         return x
 
     def structural_reparam(self):

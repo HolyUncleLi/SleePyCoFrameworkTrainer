@@ -153,7 +153,6 @@ def fft_conv(
 
 
 class _FTConv(nn.Module):
-    """Base class for PyTorch FFT convolution layers."""
 
     def __init__(
             self,
@@ -179,6 +178,8 @@ class _FTConv(nn.Module):
         self.dilation = dilation
         self.groups = groups
         self.use_bias = bias
+
+        self.frequence_resolution = 100 / 30000
 
         self.fourier_basis_1 = initMAT(featureDim, start=0, end=122).cuda()
         self.fourier_basis_2 = initMAT(featureDim, start=122, end=244).cuda()
@@ -222,10 +223,12 @@ class _FTConv(nn.Module):
             fourier_basis_5=self.fourier_basis_5,
         )
 
+
 FTConv1d = partial(_FTConv, ndim=1)
 
+
 '''
-x = torch.rand([640, 1, 3000]).cuda()
+x = torch.rand([64, 1, 3000]).cuda()
 ftcnn = FTConv1d(in_channels=1, out_channels=64, kernel_size=9, stride=1,
                                  padding=4, featureDim=3008).cuda()
 print(ftcnn(x).shape)
@@ -235,9 +238,11 @@ print(f"Total number of parameters: {total_params}")
 
 ftcnn_down = nn.Sequential(
         nn.Conv1d(64, 32, kernel_size=1, stride=1),
+
         nn.BatchNorm1d(32),
         nn.Conv1d(32, 32, kernel_size=16, stride=8),
         nn.GELU(),
+
         nn.Conv1d(32, 64, kernel_size=1, stride=1),
     )
 total_params = sum(p.numel() for p in ftcnn_down.parameters())

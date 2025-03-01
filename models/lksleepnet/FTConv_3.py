@@ -1,6 +1,6 @@
 from functools import partial
 from typing import Iterable, Tuple, Union
-import numpy as np
+
 import torch
 import torch.nn.functional as f
 from torch import Tensor, nn
@@ -32,6 +32,16 @@ def complex_matmul(a: Tensor, b: Tensor, groups: int = 1) -> Tensor:
 
 
 def to_ntuple(val: Union[int, Iterable[int]], n: int) -> Tuple[int, ...]:
+    """Casts to a tuple with length 'n'.  Useful for automatically computing the
+    padding and stride for convolutions, where users may only provide an integer.
+
+    Args:
+        val: (Union[int, Iterable[int]]) Value to cast into a tuple.
+        n: (int) Desired length of the tuple
+
+    Returns:
+        (Tuple[int, ...]) Tuple of length 'n'
+    """
     if isinstance(val, Iterable):
         out = tuple(val)
         if len(out) == n:
@@ -42,34 +52,21 @@ def to_ntuple(val: Union[int, Iterable[int]], n: int) -> Tuple[int, ...]:
         return n * (val,)
 
 
-def initMAT(dim, start=0, end=0):
-
-    fourier_basis = np.fft.rfft(np.eye(dim))
-
-    for i in range(0, dim//2 + 1):
-        if i < start or i > end:
-            fourier_basis[:, i] = 0
-
-    return torch.tensor(fourier_basis).to(torch.complex64)
-
-
 def fft_conv(
-        signal: Tensor,
-        kernel: Tensor,
-        bias: Tensor = None,
-        padding: Union[int, Iterable[int], str] = 0,
-        padding_mode: str = "constant",
-        stride: Union[int, Iterable[int]] = 1,
-        dilation: Union[int, Iterable[int]] = 1,
-        groups: int = 1,
-        fourier_basis: Tensor = None,
-
-        fourier_basis_1: Tensor = None,
-        fourier_basis_2: Tensor = None,
-        fourier_basis_3: Tensor = None,
-        fourier_basis_4: Tensor = None,
-        fourier_basis_5: Tensor = None,
+    signal: Tensor,
+    kernel: Tensor,
+    bias: Tensor = None,
+    padding: Union[int, Iterable[int], str] = 0,
+    padding_mode: str = "constant",
+    stride: Union[int, Iterable[int]] = 1,
+    dilation: Union[int, Iterable[int]] = 1,
+    groups: int = 1,
+    start: int = 0,
+    end: int = 50,
 ) -> Tensor:
+    frequency_res = 100/30000
+    frequency_band = [int(start/frequency_res), int(end/frequency_res)]
+
     # Cast padding, stride & dilation to tuples.
     n = signal.ndim - 2
     stride_ = to_ntuple(stride, n=n)
@@ -111,40 +108,25 @@ def fft_conv(
     ]
     padded_kernel = f.pad(kernel, kernel_padding)
 
-    signal_fr_1 = torch.matmul(signal.to(torch.complex64), fourier_basis_1)
-    signal_fr_2 = torch.matmul(signal.to(torch.complex64), fourier_basis_2)
-    signal_fr_3 = torch.matmul(signal.to(torch.complex64), fourier_basis_3)
-    signal_fr_4 = torch.matmul(signal.to(torch.complex64), fourier_basis_4)
-    signal_fr_5 = torch.matmul(signal.to(torch.complex64), fourier_basis_5)
-
+    # Perform fourier convolution -- FFT, matrix multiply, then IFFT
+    signal_fr = rfftn(signal.float(), dim=tuple(range(2, signal.ndim)))
     kernel_fr = rfftn(padded_kernel.float(), dim=tuple(range(2, signal.ndim)))
 
-    # 频域乘法结果做逆变换
+    signal_fr[:, 0, 1:frequency_band[0]] = 0
+    signal_fr[:, 0, frequency_band[1]: -1] = 0
+
     kernel_fr.imag *= -1
-
-    output_fr_1 = complex_matmul(signal_fr_1, kernel_fr[0:kernel_fr.shape[0]//5 * 1], groups=groups)
-    output_fr_2 = complex_matmul(signal_fr_2, kernel_fr[kernel_fr.shape[0] // 5 * 1:kernel_fr.shape[0] // 5 * 2], groups=groups)
-    output_fr_3 = complex_matmul(signal_fr_3, kernel_fr[kernel_fr.shape[0] // 5 * 2:kernel_fr.shape[0] // 5 * 3], groups=groups)
-    output_fr_4 = complex_matmul(signal_fr_4, kernel_fr[kernel_fr.shape[0] // 5 * 3:kernel_fr.shape[0] // 5 * 4], groups=groups)
-    output_fr_5 = complex_matmul(signal_fr_5, kernel_fr[kernel_fr.shape[0] // 5 * 4:kernel_fr.shape[0]], groups=groups)
-
-    # print(signal_fr_1.shape, output_fr_1.shape, kernel_fr.shape)
-
-    output_fr = torch.cat((output_fr_1, output_fr_2), dim=1)
-    output_fr = torch.cat((output_fr, output_fr_3), dim=1)
-    output_fr = torch.cat((output_fr, output_fr_4), dim=1)
-    output_fr = torch.cat((output_fr, output_fr_5), dim=1)
-
+    output_fr = complex_matmul(signal_fr, kernel_fr, groups=groups)
     output = irfftn(output_fr, dim=tuple(range(2, signal.ndim)))
 
-    # 移除padding
+    # Remove extra padded values
     crop_slices = [slice(None), slice(None)] + [
         slice(0, (signal_size[i] - kernel.size(i) + 1), stride_[i - 2])
         for i in range(2, signal.ndim)
     ]
     output = output[crop_slices].contiguous()
 
-    # 添加bias
+    # Optionally, add a bias term before returning.
     if bias is not None:
         bias_shape = tuple([1, -1] + (signal.ndim - 2) * [1])
         output += bias.view(bias_shape)
@@ -156,19 +138,21 @@ class _FTConv(nn.Module):
     """Base class for PyTorch FFT convolution layers."""
 
     def __init__(
-            self,
-            in_channels: int,
-            out_channels: int,
-            kernel_size: Union[int, Iterable[int]],
-            padding: int,
-            padding_mode: str = "constant",
-            stride: Union[int, Iterable[int]] = 1,
-            dilation: Union[int, Iterable[int]] = 1,
-            groups: int = 1,
-            bias: bool = True,
-            ndim: int = 1,
-            featureDim: int = 3000,
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: Union[int, Iterable[int]],
+        padding: Union[int, Iterable[int]] = 0,
+        padding_mode: str = "constant",
+        stride: Union[int, Iterable[int]] = 1,
+        dilation: Union[int, Iterable[int]] = 1,
+        groups: int = 1,
+        bias: bool = True,
+        ndim: int = 1,
+        start: int = 0,
+        end: int = 50,
     ):
+
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -179,12 +163,8 @@ class _FTConv(nn.Module):
         self.dilation = dilation
         self.groups = groups
         self.use_bias = bias
-
-        self.fourier_basis_1 = initMAT(featureDim, start=0, end=122).cuda()
-        self.fourier_basis_2 = initMAT(featureDim, start=122, end=244).cuda()
-        self.fourier_basis_3 = initMAT(featureDim, start=244, end=366).cuda()
-        self.fourier_basis_4 = initMAT(featureDim, start=366, end=488).cuda()
-        self.fourier_basis_5 = initMAT(featureDim, start=488, end=972).cuda()
+        self.start = start
+        self.end = end
 
         if in_channels % groups != 0:
             raise ValueError(
@@ -204,7 +184,6 @@ class _FTConv(nn.Module):
         self.bias = nn.Parameter(torch.randn(out_channels)) if bias else None
 
     def forward(self, signal):
-
         return fft_conv(
             signal,
             self.weight,
@@ -214,20 +193,16 @@ class _FTConv(nn.Module):
             stride=self.stride,
             dilation=self.dilation,
             groups=self.groups,
-
-            fourier_basis_1=self.fourier_basis_1,
-            fourier_basis_2=self.fourier_basis_2,
-            fourier_basis_3=self.fourier_basis_3,
-            fourier_basis_4=self.fourier_basis_4,
-            fourier_basis_5=self.fourier_basis_5,
+            start=self.start,
+            end=self.end
         )
+
 
 FTConv1d = partial(_FTConv, ndim=1)
 
 '''
-x = torch.rand([640, 1, 3000]).cuda()
-ftcnn = FTConv1d(in_channels=1, out_channels=64, kernel_size=9, stride=1,
-                                 padding=4, featureDim=3008).cuda()
+x = torch.rand([64, 1, 30000]).cuda()
+ftcnn = FTConv1d(in_channels=1, out_channels=64, kernel_size=9, stride=1, padding=4, start=4, end=8).cuda()
 print(ftcnn(x).shape)
 total_params = sum(p.numel() for p in ftcnn.parameters())
 print(f"Total number of parameters: {total_params}")
@@ -235,9 +210,11 @@ print(f"Total number of parameters: {total_params}")
 
 ftcnn_down = nn.Sequential(
         nn.Conv1d(64, 32, kernel_size=1, stride=1),
+
         nn.BatchNorm1d(32),
         nn.Conv1d(32, 32, kernel_size=16, stride=8),
         nn.GELU(),
+
         nn.Conv1d(32, 64, kernel_size=1, stride=1),
     )
 total_params = sum(p.numel() for p in ftcnn_down.parameters())

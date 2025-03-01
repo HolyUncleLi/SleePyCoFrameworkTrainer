@@ -91,27 +91,13 @@ def main():
         Y_pred = np.concatenate([Y_pred, y_pred])
 
         summarize_result(config, fold, Y_true, Y_pred)
-        # print(Y_true.shape, Y_pred.shape)
-        # print(type(Y_true), type(Y_pred))
-        # print(type(Y_true[0]), type(Y_pred[0][0]))
-        # print(Y_true[0], Y_pred.argmax(axis=1)[0])
 
         cm.append(confusion_matrix(Y_true.astype(int), Y_pred.argmax(axis=1)))
 
     # 绘制平均混淆矩阵
     mean_cm = np.mean(cm, axis=0)
     cm_plot(mean_cm, './results/cm.svg')
-    '''
-    
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(mean_cm, annot=True, fmt='.2f', cmap='Blues', xticklabels=["wake", "N1", "N2", "N3", "REM"],
-                yticklabels=["wake", "N1", "N2", "N3", "REM"])
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title('Confusion Matrix')
-    plt.savefig('./results/confusion_matrix.png', bbox_inches='tight')
-    plt.show()
-    '''
+
 
 if __name__ == "__main__":
     main()

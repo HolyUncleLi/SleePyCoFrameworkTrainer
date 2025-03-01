@@ -196,7 +196,7 @@ class Model(nn.Module):
             self.projection = nn.Linear(
                 configs.d_model, configs.c_out, bias=True)
         '''
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.1)
 
         '''
         # Atten
@@ -243,7 +243,7 @@ import random
 import numpy as np
 
 
-fix_seed = 2021
+fix_seed = 2025
 random.seed(fix_seed)
 torch.manual_seed(fix_seed)
 np.random.seed(fix_seed)
