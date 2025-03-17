@@ -404,5 +404,5 @@ class MRCNN_SHHS(nn.Module):
 
 '''
 model = AttnSleep().cuda()
-print(model(torch.rand([2,1,30000]).cuda()).shape)
+print(model(torch.rand([2,1,3000]).cuda()).shape)
 '''

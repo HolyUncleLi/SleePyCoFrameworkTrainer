@@ -3,7 +3,7 @@
         "name": "Sleep-EDF-2013",
         "eeg_channel": "Fpz-Cz",
         "num_splits": 20,
-        "seq_len": 10,
+        "seq_len": 1,
         "target_idx": -1,
         "root_dir": "./"
     },

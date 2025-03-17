@@ -135,7 +135,6 @@ def fft_conv(
 
 
 class _FTConv(nn.Module):
-    """Base class for PyTorch FFT convolution layers."""
 
     def __init__(
         self,

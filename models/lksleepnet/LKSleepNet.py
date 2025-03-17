@@ -233,7 +233,7 @@ class ModernTCN(nn.Module):
         self.batchsize = 64
         self.seq_len = 10
         self.channeldim = 128
-        self.featuredim = self.seq_len * 8
+        self.featuredim = 80  # seq len * 8
         self.embeddim = 80
         self.class_num = class_num
 
@@ -271,7 +271,7 @@ class ModernTCN(nn.Module):
 
         self.ftcnn_downsample = nn.Sequential(
             nn.BatchNorm1d(64),
-            nn.AdaptiveAvgPool1d(3750),
+            nn.AdaptiveAvgPool1d(375),  # seq len * 375
         )
         '''
         self.ftcnn_downsample = nn.Sequential(
@@ -298,7 +298,7 @@ class ModernTCN(nn.Module):
             layer = Stage(ffn_ratio, num_blocks[stage_idx], large_size[stage_idx], small_size[stage_idx], dmodel=dims[stage_idx],
                           dw_model=dw_dims[stage_idx], nvars=nvars, small_kernel_merged=small_kernel_merged, drop=backbone_dropout)
             self.stages.append(layer)
-        self.avgpool = nn.AdaptiveAvgPool1d(self.seq_len * 8)
+        self.avgpool = nn.AdaptiveAvgPool1d(80)  # seq len * 8
         self.flatten = nn.Flatten()
 
         # times backbone
