@@ -249,6 +249,15 @@ class Transformer(nn.Module):
         return out
 
 
+class Linear(nn.Module):
+    def __init__(self, inDim):
+        super(Linear, self).__init__()
+        self.inDim = inDim
+        self.fc = nn.Linear(self.inDim, 5)
+
+    def forward(self, x):
+        return self.fc(x)
+
 def get_classifier(config):
     classifier_name = config['classifier']['name']
     
@@ -278,5 +287,8 @@ def get_classifier(config):
 
     elif classifier_name == 'Times':
         classifier = getTimes()
-    
+
+    elif classifier_name == 'Linear':
+        classifier = Linear(32)
+
     return classifier

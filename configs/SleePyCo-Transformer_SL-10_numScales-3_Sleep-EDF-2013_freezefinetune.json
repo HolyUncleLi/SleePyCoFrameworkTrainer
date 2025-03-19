@@ -3,13 +3,13 @@
         "name": "Sleep-EDF-2013",
         "eeg_channel": "Fpz-Cz",
         "num_splits": 20,
-        "seq_len": 1,
+        "seq_len": 10,
         "target_idx": -1,
         "root_dir": "./"
     },
 
     "backbone": {
-        "name": "LKSleepNet",
+        "name": "MSACNN",
         "init_weights": false,
         "dropout": false
     },

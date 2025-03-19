@@ -34,7 +34,7 @@ class MultiScaleConvolution(nn.Module):
                         self.config['out_channels_1'] * 4 / num_filter_scales)) == idx_scale).astype(int))
                 conv1i = nn.Conv2d(1, num_out_channels, kernel_size=(1, self.config['kernel_1']),
                                    stride=(1, 1), padding='same')
-            print("conv1i ", idx_scale, " para: ", conv1i.in_channels, conv1i.out_channels, conv1i.kernel_size,conv1i.stride,conv1i.padding)
+            # print("conv1i ", idx_scale, " para: ", conv1i.in_channels, conv1i.out_channels, conv1i.kernel_size,conv1i.stride,conv1i.padding)
             convs1.append(conv1i)
             dropouts1.append(Dropout(config['dropout_rate']))
 
@@ -42,7 +42,7 @@ class MultiScaleConvolution(nn.Module):
         self.dropouts1 = nn.ModuleList(dropouts1)
 
     def forward(self, x):
-        print("multi cnn input: ", x.shape)
+        # print("multi cnn input: ", x.shape)
         x_scales = []
 
         if self.config.get('multimodal_msm_conv1', False):
@@ -52,15 +52,15 @@ class MultiScaleConvolution(nn.Module):
             xi = x.clone()
 
             xi = F.avg_pool2d(xi, (1, scale))
-            print("multi cnn pool 1: ", xi.shape)
+            # print("multi cnn pool 1: ", xi.shape)
             xi = self.convs1[idx_scale](xi)
             xi = activation(xi, self.config)
-            print("multi cnn 1: ", xi.shape)
+            # print("multi cnn 1: ", xi.shape)
             if self.config['complementary_pooling'] == 'max':
                 xi = F.max_pool2d(xi, (1, 8 // scale))
             elif self.config['complementary_pooling'] == 'avg':
                 xi = F.avg_pool2d(xi, (1, 8 // scale))
-            print("multi cnn pool 2: ", xi.shape)
+            # print("multi cnn pool 2: ", xi.shape)
             xi = self.dropouts1[idx_scale](xi)
 
             if self.config.get('multimodal_msm_conv1', False):
@@ -244,19 +244,19 @@ class MSA_CNN(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        print('msacnn input: ', x.shape)
+        # print('msacnn input: ', x.shape)
         x = x.unsqueeze(1)
         if self.config.get('input_scaling', False):
             x = self.scaling_layer(x)
 
-        print(x.shape)
+        # print(x.shape)
         x = self.msm(x)
-        print(x.shape)
+        # print(x.shape)
         if self.config.get('return_msm_conv1', False) or self.config.get('return_msm_conv2', False):
             return x  # optional: return for analysis
 
         x = self.spatial_layer(x)
-        print(x.shape)
+        # print(x.shape)
         if self.config.get('num_attention_layers', 0) > 0:
             x = self.tcm(x)
             if self.config.get('access_attention_weights', False):
@@ -265,21 +265,23 @@ class MSA_CNN(nn.Module):
         x = self.avgpool(x).transpose(1, 2)
         # x = self.fc(x)
         # return self.softmax(x)
-        return x
+        return [x]
 
 
 from .config_loader import config_generator
 from torchsummary import summary
 
+
 def getmsacnn():
 
-    configs = list(config_generator('./MSA_CNN_large.json'))
+    configs = list(config_generator('./models/MSA_CNN_large.json'))
     config = []
 
     for idx_config, temp in enumerate(configs):
         config.append(temp)
 
     return MSA_CNN(config[-1]).cuda()
+
 
 '''
 model = getmsacnn()
