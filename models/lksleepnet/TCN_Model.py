@@ -47,8 +47,8 @@ parser.add_argument('--patch_stride', type=int, default=8, help='the patch strid
 parser.add_argument('--num_blocks', nargs='+', type=int, default=[1, 1], help='num_blocks in each stage')
 parser.add_argument('--large_size', nargs='+', type=int, default=[51, 31], help='big kernel size')
 parser.add_argument('--small_size', nargs='+', type=int, default=[5, 5], help='small kernel size for structral reparam')
-parser.add_argument('--dims', nargs='+', type=int, default=[64, 128], help='dmodels in each stage')
-parser.add_argument('--dw_dims', nargs='+',type=int, default=[64, 128], help='dw dims in dw conv in each stage')
+parser.add_argument('--dims', nargs='+', type=int, default=[32, 64], help='dmodels in each stage')
+parser.add_argument('--dw_dims', nargs='+',type=int, default=[32, 64], help='dw dims in dw conv in each stage')
 parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 
 parser.add_argument('--small_kernel_merged', type=bool, default=False, help='small_kernel has already merged or not')
