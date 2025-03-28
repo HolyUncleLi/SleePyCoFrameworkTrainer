@@ -263,14 +263,14 @@ class ModernTCN(nn.Module):
         # self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
         #                          padding=4, featureDim=3008)
 
-        self.ftcnn_1 = FTConv1d(in_channels=1, out_channels=4, kernel_size=31, stride=1, padding=31//2, start=0, end=4)
-        self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=4, kernel_size=15, stride=1, padding=15//2, start=4, end=8)
-        self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=4, kernel_size=9, stride=1, padding=9//2, start=8, end=12)
-        self.ftcnn_4 = FTConv1d(in_channels=1, out_channels=4, kernel_size=5, stride=1, padding=5//2, start=12, end=16)
-        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=3//2, start=16, end=32)
+        self.ftcnn_1 = FTConv1d(in_channels=1, out_channels=8, kernel_size=31, stride=1, padding=31//2, start=0, end=4)
+        self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=8, kernel_size=15, stride=1, padding=15//2, start=4, end=8)
+        self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=8, kernel_size=9, stride=1, padding=9//2, start=8, end=12)
+        self.ftcnn_4 = FTConv1d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=5//2, start=12, end=16)
+        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=3//2, start=16, end=32)
 
         self.ftcnn_downsample = nn.Sequential(
-            nn.BatchNorm1d(32),
+            nn.BatchNorm1d(64),
             nn.AdaptiveAvgPool1d(3750),  # seq len * 375
         )
         '''
@@ -302,7 +302,7 @@ class ModernTCN(nn.Module):
         self.flatten = nn.Flatten()
 
         # times backbone
-        self.embed = ARFEmbedding(64, 80)
+        self.embed = ARFEmbedding(128, 80)
         # self.embed = CBAMEmbedding(128, 16)
         self.times_drop = nn.Dropout(0.1)
         self.timesNet = getmodel()

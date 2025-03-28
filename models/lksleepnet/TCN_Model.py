@@ -40,15 +40,15 @@ parser.add_argument('--num_class', type=int, default=5, help='num of class')
 # ModernTCN base
 parser.add_argument('--stem_ratio', type=int, default=1000000, help='stem ratio')
 parser.add_argument('--downsample_ratio', type=int, default=4, help='downsample_ratio')
-parser.add_argument('--ffn_ratio', type=int, default=4, help='ffn_ratio')
+parser.add_argument('--ffn_ratio', type=int, default=2, help='ffn_ratio')
 parser.add_argument('--patch_size', type=int, default=16, help='the patch size')
 parser.add_argument('--patch_stride', type=int, default=8, help='the patch stride')
 
 parser.add_argument('--num_blocks', nargs='+', type=int, default=[1, 1], help='num_blocks in each stage')
 parser.add_argument('--large_size', nargs='+', type=int, default=[51, 31], help='big kernel size')
 parser.add_argument('--small_size', nargs='+', type=int, default=[5, 5], help='small kernel size for structral reparam')
-parser.add_argument('--dims', nargs='+', type=int, default=[32, 64], help='dmodels in each stage')
-parser.add_argument('--dw_dims', nargs='+',type=int, default=[32, 64], help='dw dims in dw conv in each stage')
+parser.add_argument('--dims', nargs='+', type=int, default=[64, 128], help='dmodels in each stage')
+parser.add_argument('--dw_dims', nargs='+',type=int, default=[64, 128], help='dw dims in dw conv in each stage')
 parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 
 parser.add_argument('--small_kernel_merged', type=bool, default=False, help='small_kernel has already merged or not')
