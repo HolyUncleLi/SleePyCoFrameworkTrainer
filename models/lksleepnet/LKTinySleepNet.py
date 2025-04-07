@@ -289,10 +289,9 @@ class ModernTCN(nn.Module):
         self.n_vars = c_in
         self.individual = individual
 
-        if self.task_name == 'classification':
-            self.act_class = F.gelu
-            self.class_dropout = nn.Dropout(0.5)
-            self.head_class2 = nn.Linear(self.featuredim, self.class_num)
+        self.act_class = F.gelu
+        self.class_dropout = nn.Dropout(0.5)
+        self.head_class2 = nn.Linear(self.featuredim, self.class_num)
 
         self.mask = torch.ones([self.batchsize, self.seq_len]).to(bool)
         self.crf = CRF(5)

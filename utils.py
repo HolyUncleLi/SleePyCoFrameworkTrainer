@@ -256,38 +256,42 @@ def summarize_result(config, fold, y_true, y_pred, save=True):
 
 
 def cm_plot(cm, savepath):
-    cm_new = np.zeros(shape=[5, 5])
+    # 假设 cm 为 5x5 的原始混淆矩阵（样本数量）
+    cm_new = np.zeros((5, 5))
     for x in range(5):
         t = cm.sum(axis=1)[x]
         for y in range(5):
-            cm_new[x][y] = round(cm[x][y] / t * 100, 2)
+            # 避免除以零
+            cm_new[x][y] = round(cm[x][y] / t * 100, 2) if t != 0 else 0
 
+    # 绘制混淆矩阵（显示百分比）
     plt.matshow(cm_new, cmap=plt.cm.Blues)
-
     plt.colorbar()
-    x_numbers = []
-    y_numbers = []
-    for x in range(5):
-        y_numbers.append(cm.sum(axis=1)[x])
-        x_numbers.append(cm.sum(axis=0)[x])
-        for y in range(5):
-            percent = format(cm_new[x, y] * 100 / cm_new.sum(axis=1)[x], ".2f")
 
-            plt.annotate(format(cm_new[x, y] * 100 / cm_new.sum(axis=1)[x], ".2f"), xy=(y, x),
+    # 设定阈值：百分比大于最大值的一半时，文字显示为白色
+    threshold = cm_new.max() / 2.0
+
+    # 在每个单元格内注释两行文字：第一行百分比，第二行原始样本数
+    for x in range(5):
+        for y in range(5):
+            text = f"{cm_new[x][y]}%\n({int(cm[x][y])})"
+            color = "white" if cm_new[x, y] > threshold else "black"
+            plt.annotate(text,
+                         xy=(y, x),
                          horizontalalignment='center',
-                         verticalalignment='center', fontsize=10)
+                         verticalalignment='center',
+                         fontsize=10,
+                         color=color)
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    # plt.title('confusion matrix')
 
-    y_stage = ["W\n(" + str(y_numbers[0]) + ")", "N1\n(" + str(y_numbers[1]) + ")", "N2\n(" + str(y_numbers[2]) + ")",
-               "N3\n(" + str(y_numbers[3]) + ")", "REM\n(" + str(y_numbers[4]) + ")"]
-    x_stage = ["W\n(" + str(x_numbers[0]) + ")", "N1\n(" + str(x_numbers[1]) + ")", "N2\n(" + str(x_numbers[2]) + ")",
-               "N3\n(" + str(x_numbers[3]) + ")", "REM\n(" + str(x_numbers[4]) + ")"]
-    y = [0, 1, 2, 3, 4]
-    plt.xticks(y, x_stage)
-    plt.yticks(y, y_stage)
+    # 坐标轴标签只显示类别名称，不显示任何额外信息
+    categories = ["W", "N1", "N2", "N3", "REM"]
+    ticks = [0, 1, 2, 3, 4]
+    plt.xticks(ticks, categories)
+    plt.yticks(ticks, categories)
+
     plt.tight_layout()
     plt.savefig(savepath, bbox_inches='tight')
     plt.close()

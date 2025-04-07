@@ -40,7 +40,7 @@ parser.add_argument('--num_class', type=int, default=5, help='num of class')
 # ModernTCN base
 parser.add_argument('--stem_ratio', type=int, default=1000000, help='stem ratio')
 parser.add_argument('--downsample_ratio', type=int, default=4, help='downsample_ratio')
-parser.add_argument('--ffn_ratio', type=int, default=2, help='ffn_ratio')
+parser.add_argument('--ffn_ratio', type=int, default=4, help='ffn_ratio')
 parser.add_argument('--patch_size', type=int, default=16, help='the patch size')
 parser.add_argument('--patch_stride', type=int, default=8, help='the patch stride')
 
@@ -74,7 +74,7 @@ parser.add_argument('--embed_type', type=int, default=0, help='0: default 1: val
 parser.add_argument('--enc_in', type=int, default=1, help='encoder input size')
 parser.add_argument('--dec_in', type=int, default=1, help='decoder input size')
 parser.add_argument('--c_out', type=int, default=1000, help='output size')
-parser.add_argument('--d_model', type=int, default=256, help='dimension of model')
+parser.add_argument('--d_model', type=int, default=128, help='dimension of model')
 parser.add_argument('--n_heads', type=int, default=5, help='num of heads')
 parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
 parser.add_argument('--d_layers', type=int, default=1, help='num of decoder layers')
