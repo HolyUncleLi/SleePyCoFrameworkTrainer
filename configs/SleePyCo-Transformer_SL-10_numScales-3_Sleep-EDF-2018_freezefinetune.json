@@ -8,21 +8,21 @@
         "root_dir": "./"
     },
 
-    "backbone": {
-        "name": "SleePyCo",
+     "backbone": {
+        "name": "LKSleepNet",
         "init_weights": false,
         "dropout": false
     },
 
     "feature_pyramid": {
-        "dim": 128,
-        "num_scales": 3
+        "dim": 80,
+        "num_scales": 0
     },
 
     "classifier": {
         "name": "Transformer",
-        "model_dim": 128,
-        "feedforward_dim": 128,
+        "model_dim": 32,
+        "feedforward_dim": 32,
         "pool": "attn",
         "dropout": false,
         "num_classes": 5,
@@ -33,7 +33,7 @@
 
     "training_params": {
         "mode": "freezefinetune",
-        "max_epochs": 500,
+        "max_epochs": 200,
         "batch_size": 64,
         "lr": 0.0005,
         "weight_decay": 0.0001,
