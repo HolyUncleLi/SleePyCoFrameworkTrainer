@@ -143,7 +143,9 @@ class SleepFIM(nn.Module):
         self.feb = FeatureExtractionBlock(feature_dim)
         self.icb = IntraChannelBlock(feature_dim, feature_dim)
         self.fc1 = nn.Linear(feature_dim, transformer_dim)
-        self.pool = nn.AdaptiveAvgPool1d(80)
+        self.pool1 = nn.AdaptiveAvgPool1d(128)
+        self.pool2 = nn.AdaptiveAvgPool1d(7500)
+        self.pool3 = nn.AdaptiveAvgPool1d(128)
 
         # Multimodal Feature Fusion
         # self.mffb = MultiModalFeatureBlock(feature_dim, transformer_dim)
@@ -165,7 +167,9 @@ class SleepFIM(nn.Module):
         # z3 = self.icb(self.feb(eog))
         f1 = self.fc1(z1).transpose(1, 2)
 
-        out = self.pool(f1).transpose(1, 2)
+        out = self.pool1(f1).transpose(1, 2)
+        # out = self.pool2(out)
+        # out = self.pool3(out)
         # Feature Fusion
         # fused = self.mffb(z1, z2, z3)
 
