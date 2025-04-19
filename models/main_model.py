@@ -11,6 +11,7 @@ from .attnsleepnet import AttnSleep
 from .lksleepnet.TCN_Model import getmodel
 from .classifiers import get_classifier
 from .MSA_CNN import getmsacnn
+from .SleepFIM import SleepFIM
 
 last_chn_dict = {
     'SleePyCo': 256,
@@ -52,6 +53,8 @@ class MainModel(nn.Module):
             self.feature = getmsacnn()
         elif self.bb_cfg['name'] == 'LKFGNN':
             print('_')
+        elif self.bb_cfg['name'] == 'SleepFIM':
+            self.feature = SleepFIM().cuda()
         else:
             raise NotImplementedError('backbone not supported: {}'.format(config['backbone']['name']))
 

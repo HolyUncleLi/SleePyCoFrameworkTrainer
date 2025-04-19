@@ -371,8 +371,8 @@ def main():
     parser.add_argument('--seed', type=int, default=42, help='random seed')
     parser.add_argument('--gpu', type=str, default="0", help='gpu id')
     # parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json', help='config file path')
-    # parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json', help='config file path')
-    parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2018_freezefinetune.json', help='config file path')
+    parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json', help='config file path')
+    # parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2018_freezefinetune.json', help='config file path')
     args = parser.parse_args()
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -388,8 +388,8 @@ def main():
     Y_true = np.zeros(0)
     Y_pred = np.zeros((0, config['classifier']['num_classes']))
 
-    # for fold in range(1, 2):
-    for fold in range(1, config['dataset']['num_splits'] + 1):
+    for fold in range(1, 2):
+    # for fold in range(1, config['dataset']['num_splits'] + 1):
         trainer = OneFoldTrainer(args, fold, config)
         y_true, y_pred = trainer.run()
         Y_true = np.concatenate([Y_true, y_true])

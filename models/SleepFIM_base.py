@@ -161,8 +161,10 @@ class SleepFIM(nn.Module):
         return output
 
 
+'''
 model = SleepFIM().cuda()
 x = torch.rand(2,3000,1).cuda()
 y = torch.rand(2,3000,1).cuda()
 z = torch.rand(2,3000,1).cuda()
 print(model(x,y,z).shape)
+'''

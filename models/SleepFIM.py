@@ -38,7 +38,7 @@ class FeatureExtractionBlock(nn.Module):
         return adaptive_mask
 
     def forward(self, x_in):
-        print("feb in: ",x_in.shape)
+        # print("feb in: ",x_in.shape)
         B, N, C = x_in.shape
 
         dtype = x_in.dtype
@@ -46,11 +46,11 @@ class FeatureExtractionBlock(nn.Module):
 
         # Apply FFT along the time dimension
         x_fft = torch.fft.rfft(x, dim=1, norm='ortho')
-        print("feb xfft: ",x_fft.shape)
+        # print("feb xfft: ",x_fft.shape)
         weight = torch.view_as_complex(self.complex_weight)
-        print("feb weight: ", x_fft.shape)
+        # print("feb weight: ", x_fft.shape)
         x_weighted = x_fft * weight
-        print("feb xweight: ", x_fft.shape)
+        # print("feb xweight: ", x_fft.shape)
         if self.adaptive_filter:
             # Adaptive High Frequency Mask (no need for dimensional adjustments)
             freq_mask = self.create_adaptive_high_freq_mask(x_fft)
@@ -66,7 +66,7 @@ class FeatureExtractionBlock(nn.Module):
 
         x = x.to(dtype)
         x = x.view(B, N, 64)  # Reshape back to original shape
-        print("feb out: ", x_in.shape)
+        # print("feb out: ", x_in.shape)
         return x
 
 
@@ -81,7 +81,7 @@ class IntraChannelBlock(nn.Module):
 
     def forward(self, x):
         x = x.transpose(1, 2)
-        print(x.shape)
+
         x1 = self.conv1(x)
         x1_1 = self.act(x1)
         x1_2 = self.drop(x1_1)
@@ -124,7 +124,7 @@ class MultiModalFeatureBlock(nn.Module):
         # Cat & Add positional encoding (simplified here)
         fused = torch.stack([f1, f2, f3], dim=1)  # (B, 3, D)
         fused = torch.mean(fused, dim=2).squeeze()
-        print("fused: ", fused.shape)
+
         # Transformer encoder
         transformer_out = self.transformer_encoder(fused)
 
@@ -142,37 +142,45 @@ class SleepFIM(nn.Module):
         # Feature Extraction Network
         self.feb = FeatureExtractionBlock(feature_dim)
         self.icb = IntraChannelBlock(feature_dim, feature_dim)
+        self.fc1 = nn.Linear(feature_dim, transformer_dim)
+        self.pool = nn.AdaptiveAvgPool1d(80)
 
         # Multimodal Feature Fusion
-        self.mffb = MultiModalFeatureBlock(feature_dim, transformer_dim)
+        # self.mffb = MultiModalFeatureBlock(feature_dim, transformer_dim)
 
         # Classifier
+        '''
         self.classifier = nn.Sequential(
             nn.Linear(transformer_dim, num_classes),
             nn.Softmax(dim=1)
         )
+        '''
 
-    def forward(self, eeg1, eeg2, eog):
+    def forward(self, eeg1, eeg2=None, eog=None):
+        eeg1 = eeg1.transpose(1,2)
+
         # Pass through FEB and ICB
         z1 = self.icb(self.feb(eeg1))
-        z2 = self.icb(self.feb(eeg2))
-        z3 = self.icb(self.feb(eog))
+        # z2 = self.icb(self.feb(eeg2))
+        # z3 = self.icb(self.feb(eog))
+        f1 = self.fc1(z1).transpose(1, 2)
 
-        print(z1.shape, z2.shape,z3.shape)
-
+        out = self.pool(f1).transpose(1, 2)
         # Feature Fusion
-        fused = self.mffb(z1, z2, z3)
+        # fused = self.mffb(z1, z2, z3)
 
         # Classification
-        output = self.classifier(fused)
-        return output
+        # output = self.classifier(fused)
+        return [out]
 
 
+'''
 model = SleepFIM().cuda()
-x = torch.rand(2,3000,1).cuda()
-y = torch.rand(2,3000,1).cuda()
-z = torch.rand(2,3000,1).cuda()
-print(model(x,y,z).shape)
+x = torch.rand(2, 30000, 1).cuda()
+# y = torch.rand(2, 30000, 1).cuda()
+# z = torch.rand(2, 30000, 1).cuda()
+print(model(x).shape)
 
 total_params = sum(p.numel() for p in model.parameters())
 print(f"Total number of parameters: {total_params}")
+'''
