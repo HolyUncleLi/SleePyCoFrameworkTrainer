@@ -112,8 +112,7 @@ class TimesBlock(nn.Module):
         super(TimesBlock, self).__init__()
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
-        self.k = configs.top_k
-
+        # self.k = configs.top_k
 
         self.conv = nn.Sequential(
             Inception_Block_V2(configs.d_model, configs.d_ff,
@@ -134,7 +133,7 @@ class TimesBlock(nn.Module):
             period_list[0] = self.seq_len
 
         res = []
-        for i in range(self.k):
+        for i in range(5):
             period = period_list[i]
             # print("period",period)
             # padding

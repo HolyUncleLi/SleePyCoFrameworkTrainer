@@ -54,7 +54,7 @@ class MainModel(nn.Module):
         elif self.bb_cfg['name'] == 'LKFGNN':
             print('_')
         elif self.bb_cfg['name'] == 'SleepFIM':
-            self.feature = SleepFIM().cuda()
+            self.feature = SleepFIM()
         else:
             raise NotImplementedError('backbone not supported: {}'.format(config['backbone']['name']))
 
@@ -117,4 +117,4 @@ class MainModel(nn.Module):
             else:
                 raise NotImplementedError
         # print("out shape: ", len(outputs), outputs[0].shape)
-        return outputs
+        return outputs[0]

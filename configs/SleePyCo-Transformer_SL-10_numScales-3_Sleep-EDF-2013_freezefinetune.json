@@ -9,20 +9,20 @@
     },
 
     "backbone": {
-        "name": "SleepFIM",
+        "name": "LKSleepNet",
         "init_weights": false,
         "dropout": false
     },
 
     "feature_pyramid": {
-        "dim": 128,
+        "dim": 80,
         "num_scales": 0
     },
 
     "classifier": {
         "name": "Transformer",
-        "model_dim": 128,
-        "feedforward_dim": 128,
+        "model_dim": 36,
+        "feedforward_dim": 36,
         "pool": "attn",
         "dropout": false,
         "num_classes": 5,

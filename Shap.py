@@ -11,6 +11,7 @@ from utils import *
 from loader import EEGDataLoader
 from train_mtcl import OneFoldTrainer
 from models.main_model import MainModel
+import shap
 
 warnings.filterwarnings("ignore")
 
@@ -85,19 +86,13 @@ def main():
     Y_pred = np.zeros((0, config['classifier']['num_classes']))
     cm = []
 
-    for fold in range(1, config['dataset']['num_splits'] + 1):
+    # for fold in range(1, config['dataset']['num_splits'] + 1):
+    for fold in range(1, 2):
         evaluator = OneFoldEvaluator(args, fold, config)
         y_true, y_pred = evaluator.run()
         Y_true = np.concatenate([Y_true, y_true])
         Y_pred = np.concatenate([Y_pred, y_pred])
-
-        summarize_result(config, fold, Y_true, Y_pred)
-
-        cm.append(confusion_matrix(Y_true.astype(int), Y_pred.argmax(axis=1)))
-
-    # 绘制平均混淆矩阵
-    mean_cm = np.mean(cm, axis=0)
-    cm_plot(mean_cm, './results/cm.svg')
+        print(Y_true.shape, Y_pred.shape)
 
 
 if __name__ == "__main__":

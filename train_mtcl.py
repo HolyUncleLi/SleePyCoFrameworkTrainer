@@ -2,6 +2,7 @@ import os
 import json
 import argparse
 import warnings
+import shap
 
 import torch
 import torch.nn as nn
@@ -164,7 +165,8 @@ class OneFoldTrainer:
         self.tp_cfg = config['training_params']
         self.es_cfg = self.tp_cfg['early_stopping']
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cpu')
         print('[INFO] Config name: {}'.format(config['name']))
 
         self.train_iter = 0
@@ -276,6 +278,7 @@ class OneFoldTrainer:
         y_true = np.zeros(0)
         y_pred = np.zeros((0, self.cfg['classifier']['num_classes']))
 
+        data = None
         t = 0
         num = 0
         for i, (inputs, labels) in enumerate(self.loader_dict[mode]):
@@ -285,11 +288,11 @@ class OneFoldTrainer:
             labels = labels.view(-1).to(self.device)
 
             outputs = self.model(inputs)
-            outputs_sum = torch.zeros_like(outputs[0])
+            outputs_sum = torch.zeros_like(outputs)
 
-            for j in range(len(outputs)):
-                loss += self.criterion(outputs[j], labels)
-                outputs_sum += outputs[j]
+            # for j in range(len(outputs)):
+            loss += self.criterion(outputs, labels)
+            outputs_sum += outputs
 
             eval_loss += loss.item()
             predicted = torch.argmax(outputs_sum, 1)
@@ -298,6 +301,10 @@ class OneFoldTrainer:
             y_true = np.concatenate([y_true, labels.cpu().numpy()])
             y_pred = np.concatenate([y_pred, outputs_sum.cpu().numpy()])
 
+            if data is None:
+                data = inputs.cpu().detach().numpy()
+            else:
+                data = np.concatenate((data, inputs.cpu().detach().numpy()), axis=0)
             # cam = grad_cam(self.model, outputs[0])
             '''
             # 绘制ftconv波形图
