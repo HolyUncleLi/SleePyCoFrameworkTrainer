@@ -117,4 +117,4 @@ class MainModel(nn.Module):
             else:
                 raise NotImplementedError
         # print("out shape: ", len(outputs), outputs[0].shape)
-        return outputs[0]
+        return outputs

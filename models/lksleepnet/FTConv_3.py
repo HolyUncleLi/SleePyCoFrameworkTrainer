@@ -64,7 +64,7 @@ def fft_conv(
     start: int = 0,
     end: int = 50,
 ) -> Tensor:
-    frequency_res = 100/30000
+    frequency_res = 100/3000
     frequency_band = [int(start/frequency_res), int(end/frequency_res)]
 
     # Cast padding, stride & dilation to tuples.

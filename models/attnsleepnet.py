@@ -133,7 +133,10 @@ class MRCNN(nn.Module):
     def forward(self, x):
         x1 = self.features1(x)
         x2 = self.features2(x)
-        x_concat = torch.cat((x1, x2), dim=2)
+        x_concat = F.pad(torch.cat((x1, x2), dim=2), (0, 23))
+        # print("mrcnn1 out: ", x1.shape)
+        # print("mrcnn2 out: ", x2.shape)
+        # print("mrcnn out: ", x_concat.shape)
         x_concat = self.dropout(x_concat)
         x_concat = self.AFR(x_concat)
         return x_concat
@@ -305,7 +308,7 @@ class AttnSleep(nn.Module):
         super(AttnSleep, self).__init__()
 
         N = 2  # number of TCE clones
-        d_model = 80  # set to be 100 for SHHS dataset
+        d_model = 800  # set to be 100 for SHHS dataset
         d_ff = 120  # dimension of feed forward
         h = 5  # number of attention heads
         dropout = 0.1
@@ -321,14 +324,16 @@ class AttnSleep(nn.Module):
         self.fc = nn.Linear(d_model * afr_reduced_cnn_size, num_classes)
 
     def forward(self, x):
-        print("input: ",x.shape)
+        # print("input: ",x.shape)
         x_feat = self.mrcnn(x)
-        print("feat shape: ", x_feat.shape)
+        # print("feat shape: ", x_feat.shape)
         encoded_features = self.tce(x_feat)
-        print("encode shape: ", encoded_features.shape)
-        encoded_features = encoded_features.contiguous().view(encoded_features.shape[0], -1)
-        final_output = self.fc(encoded_features)
-        return final_output
+        # print("encode shape: ", encoded_features.shape)
+        encoded_features = encoded_features.contiguous()
+        # encoded_features = encoded_features.contiguous().view(encoded_features.shape[0], -1)
+        # final_output = self.fc(encoded_features)
+        print("asdasd", encoded_features.shape)
+        return [encoded_features]
 
 
 ######################################################################
@@ -404,5 +409,8 @@ class MRCNN_SHHS(nn.Module):
 
 '''
 model = AttnSleep().cuda()
-print(model(torch.rand([2,1,3000]).cuda()).shape)
+print(model(torch.rand([2,1,30000]).cuda()).shape)
+
+total_params = sum(p.numel() for p in model.parameters())
+print(f"Total number of parameters: {total_params}")
 '''

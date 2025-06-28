@@ -271,7 +271,7 @@ class ModernTCN(nn.Module):
 
         self.ftcnn_downsample = nn.Sequential(
             nn.BatchNorm1d(64),
-            nn.AdaptiveAvgPool1d(3750),  # seq len * 375
+            nn.AdaptiveAvgPool1d(375),  # seq len * 375
             # nn.AdaptiveAvgPool1d(4687),  # seq len * 375
         )
         '''
@@ -306,7 +306,7 @@ class ModernTCN(nn.Module):
         self.embed = ARFEmbedding(128, 80)
         # self.embed = CBAMEmbedding(128, 16)
         self.times_drop = nn.Dropout(0.1)
-        self.timesNet = getmodel()
+        self.timesNet = getmodel().cuda()
         self.shortcut = nn.Linear(80, 64)
 
         # head

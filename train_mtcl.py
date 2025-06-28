@@ -2,157 +2,19 @@ import os
 import json
 import argparse
 import warnings
-import shap
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-# from GradCAM_FTConv import features
 from utils import *
 from loader import EEGDataLoader
 from models.main_model import MainModel
+
+
 # from test import *
 
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.colors as mcolors
-from matplotlib.colors import LinearSegmentedColormap
-from scipy.interpolate import interp1d
-
-features = []
-f1 = []
-f2 = []
-f3 = []
-f4 = []
-f5 = []
-
-'''
-def grad_cam(model, output, channelNum=8):
-
-    # 反向传播
-    model.zero_grad()
-    print(output.shape)
-    target = torch.max(output[0])
-    target.requires_grad = True
-    print(target)
-    target.backward()
-    print("predict label: ", target)
-
-    # 获取梯度和特征图
-    gradients = model.module.feature.model.head_class2.weight.grad.data.numpy()
-    print("grad shape: ", gradients.shape)
-    print("features shape: ", len(features), features[-1].shape)
-
-    weights = np.mean(gradients, axis=1)
-    weights = weights[:, np.newaxis]
-    print("weight shape: ", weights.shape)
-
-    cam = np.zeros([output.shape[-1]])
-    for i in range(channelNum):
-        cam += weights[i] * features[-1][0, i].detach().numpy()
-    cam = np.maximum(cam, 0)
-    cam = cam / np.max(cam)
-
-    # 原始数组
-    original_array = cam
-    original_indices = np.linspace(0, 1, len(original_array))
-    target_indices = np.linspace(0, 1, 3000)
-
-    interp_function = interp1d(original_indices, original_array, kind='linear')
-    cam = interp_function(target_indices)
-
-    return cam
-
-
-def DrawCAM(signal, cam, y):
-    attention_weights = cam
-    # attention_weights = f.softmax(torch.tensor(attention_weights)).detach().numpy()
-    attention_weights[attention_weights < 0] = 0
-
-    # 创建背景热力图数据
-    heatmap = np.tile(attention_weights, (15, 1))
-
-    # 生成颜色映射
-    cmap = plt.get_cmap('viridis')
-    norm = mcolors.Normalize(vmin=np.min(attention_weights), vmax=np.max(attention_weights))
-    colors = cmap(norm(attention_weights))
-
-    plt.figure(figsize=(15, 4))
-
-    # 绘制渐变颜色的热力图作为背景，并使透明度随值变化
-    cmap_colors = [(0, '#ffffff'), (0.2, '#ffd7bc'), (0.4, '#ffbe90'), (0.6, '#ffa261'), (0.8, '#ff832e'),
-                   (1, '#ff6800')]
-    back_cmap = LinearSegmentedColormap.from_list('back_cmap', cmap_colors)
-
-    plt.imshow(heatmap, aspect='auto', cmap=back_cmap, extent=[0, len(signal), np.min(signal), np.max(signal)], alpha=1)
-    plt.colorbar(label='Attention Weight')
-
-    # 绘制信号线，并根据注意力权重修改线条颜色
-    for i in range(len(signal) - 1):
-        plt.plot([i, i + 1], [signal[i], signal[i + 1]], color=colors[i])
-
-    plt.title('Signal with Attention Weights')
-    plt.show()
-    # plt.savefig("./results/cam/" + str(y) + ".png", bbox_inches='tight', pad_inches=0)
-'''
-
-def DrawWaveform(inputs, labels, j, num):
-    print(labels[j])
-    fig, axs = plt.subplots(6, 1, figsize=(8, 12), sharex=True)
-    length = 375
-    X = np.linspace(0, length, length)
-
-    # axs[0].set_ylabel('Origin Signal', rotation=90, labelpad=0)
-    axs[0].plot(np.linspace(0, 375, 3000), inputs[j, 0, 0:3000].cpu().detach().numpy())
-
-    feature = torch.mean(features[-1][j, 0:8], dim=0)
-    # axs[1].set_ylabel('Delta Band', rotation=90, labelpad=0)
-    axs[1].plot(X, feature[0:length].cpu(), color='#009999')
-
-    feature = torch.mean(features[-1][j, 8:16], dim=0)
-    # axs[2].set_ylabel('Theta Band', rotation=90, labelpad=0)
-    axs[2].plot(X, feature[0:length].cpu(), color='#1240AB')
-
-    feature = torch.mean(features[-1][j, 16:24], dim=0)
-    # axs[3].set_ylabel('Alpha Band', rotation=90, labelpad=0, ha='right', va='center')
-    axs[3].plot(X, feature[0:length].cpu(), color='#6C8CD5')
-
-    feature = torch.mean(features[-1][j, 24:32], dim=0)
-    # axs[4].set_ylabel('Sigma Band', rotation=90, labelpad=0, ha='right', va='center')
-    axs[4].plot(X, feature[0:length].cpu(), color='#FFAA00')
-
-    feature = torch.mean(features[-1][j, 32:64], dim=0)
-    # axs[5].set_ylabel('Beta Band', rotation=90, labelpad=0, ha='right', va='center')
-    axs[5].plot(X, feature[0:length].cpu(), color='#FF7400')
-
-    plt.tight_layout()
-    plt.savefig("./results/waveform/" + str(num) + '_' + str(labels[j].cpu().detach().numpy()) + ".png",
-                bbox_inches='tight', pad_inches=0.1)
-    # plt.show()
-    '''
-    fig, axs = plt.subplots(5, 1, figsize=(10, 12), sharex=True)
-    length = 3000
-    X = np.linspace(0,length,length)
-
-    feature = torch.mean(f1[-1][0], dim=0)
-    axs[0].plot(X, feature[0:length].cpu())
-
-    feature = torch.mean(f2[-1][0], dim=0)
-    axs[1].plot(X, feature[0:length].cpu())
-
-    feature = torch.mean(f3[-1][0], dim=0)
-    axs[2].plot(X, feature[0:length].cpu())
-
-    feature = torch.mean(f4[-1][0], dim=0)
-    axs[3].plot(X, feature[0:length].cpu())
-
-    feature = torch.mean(f5[-1][0], dim=0)
-    axs[4].plot(X, feature[0:length].cpu())
-
-    plt.show()
-    '''
 
 class OneFoldTrainer:
     def __init__(self, args, fold, config):
@@ -165,8 +27,7 @@ class OneFoldTrainer:
         self.tp_cfg = config['training_params']
         self.es_cfg = self.tp_cfg['early_stopping']
 
-        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print('[INFO] Config name: {}'.format(config['name']))
 
         self.train_iter = 0
@@ -175,12 +36,13 @@ class OneFoldTrainer:
 
         self.criterion = nn.CrossEntropyLoss()
         self.activate_train_mode()
-        self.optimizer = optim.Adam([p for p in self.model.parameters() if p.requires_grad], lr=self.tp_cfg['lr'], weight_decay=self.tp_cfg['weight_decay'])
+        self.optimizer = optim.Adam([p for p in self.model.parameters() if p.requires_grad], lr=self.tp_cfg['lr'],
+                                    weight_decay=self.tp_cfg['weight_decay'])
 
         self.ckpt_path = os.path.join('checkpoints', config['name'])
         self.ckpt_name = 'ckpt_fold-{0:02d}.pth'.format(self.fold)
-        self.early_stopping = EarlyStopping(patience=self.es_cfg['patience'], verbose=True, ckpt_path=self.ckpt_path, ckpt_name=self.ckpt_name, mode=self.es_cfg['mode'])
-
+        self.early_stopping = EarlyStopping(patience=self.es_cfg['patience'], verbose=True, ckpt_path=self.ckpt_path,
+                                            ckpt_name=self.ckpt_name, mode=self.es_cfg['mode'])
 
     def build_model(self):
         model = MainModel(self.cfg)
@@ -202,11 +64,14 @@ class OneFoldTrainer:
 
     def build_dataloader(self):
         train_dataset = EEGDataLoader(self.cfg, self.fold, set='train')
-        train_loader = DataLoader(dataset=train_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=True, num_workers=2*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
+        train_loader = DataLoader(dataset=train_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=True,
+                                  num_workers=4 * len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         val_dataset = EEGDataLoader(self.cfg, self.fold, set='val')
-        val_loader = DataLoader(dataset=val_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=2*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False,
+                                num_workers=4 * len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         test_dataset = EEGDataLoader(self.cfg, self.fold, set='test')
-        test_loader = DataLoader(dataset=test_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False, num_workers=2*len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=self.tp_cfg['batch_size'], shuffle=False,
+                                 num_workers=4 * len(self.args.gpu.split(",")), pin_memory=True, drop_last=True)
         print('[INFO] Dataloader prepared')
 
         return {'train': train_loader, 'val': val_loader, 'test': test_loader}
@@ -223,12 +88,12 @@ class OneFoldTrainer:
             print('[INFO] Unfreeze conv_c5')
             self.model.module.feature.conv_c5.train(True)
             for p in self.model.module.feature.conv_c5.parameters(): p.requires_grad = True
-            
+
             if self.fp_cfg['num_scales'] > 1:
                 print('[INFO] Unfreeze conv_c4')
                 self.model.module.feature.conv_c4.train(True)
                 for p in self.model.module.feature.conv_c4.parameters(): p.requires_grad = True
-                
+
             if self.fp_cfg['num_scales'] > 2:
                 print('[INFO] Unfreeze conv_c3')
                 self.model.module.feature.conv_c3.train(True)
@@ -261,7 +126,7 @@ class OneFoldTrainer:
             self.train_iter += 1
 
             progress_bar(i, len(self.loader_dict['train']), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                    % (train_loss / (i + 1), 100. * correct / total, correct, total))
+                         % (train_loss / (i + 1), 100. * correct / total, correct, total))
 
             if self.train_iter % self.tp_cfg['val_period'] == 0:
                 print('')
@@ -278,9 +143,6 @@ class OneFoldTrainer:
         y_true = np.zeros(0)
         y_pred = np.zeros((0, self.cfg['classifier']['num_classes']))
 
-        data = None
-        t = 0
-        num = 0
         for i, (inputs, labels) in enumerate(self.loader_dict[mode]):
             loss = 0
             total += labels.size(0)
@@ -288,11 +150,11 @@ class OneFoldTrainer:
             labels = labels.view(-1).to(self.device)
 
             outputs = self.model(inputs)
-            outputs_sum = torch.zeros_like(outputs)
+            outputs_sum = torch.zeros_like(outputs[0])
 
-            # for j in range(len(outputs)):
-            loss += self.criterion(outputs, labels)
-            outputs_sum += outputs
+            for j in range(len(outputs)):
+                loss += self.criterion(outputs[j], labels)
+                outputs_sum += outputs[j]
 
             eval_loss += loss.item()
             predicted = torch.argmax(outputs_sum, 1)
@@ -301,23 +163,8 @@ class OneFoldTrainer:
             y_true = np.concatenate([y_true, labels.cpu().numpy()])
             y_pred = np.concatenate([y_pred, outputs_sum.cpu().numpy()])
 
-            if data is None:
-                data = inputs.cpu().detach().numpy()
-            else:
-                data = np.concatenate((data, inputs.cpu().detach().numpy()), axis=0)
-            # cam = grad_cam(self.model, outputs[0])
-            '''
-            # 绘制ftconv波形图
-            for j in range(64):
-                DrawWaveform(inputs,labels,j,num)
-                num += 1
-            t += 1
-            if t > 10:
-                break
-            '''
-
             progress_bar(i, len(self.loader_dict[mode]), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                    % (eval_loss / (i + 1), 100. * correct / total, correct, total))
+                         % (eval_loss / (i + 1), 100. * correct / total, correct, total))
 
         if mode == 'val':
             return 100. * correct / total, eval_loss
@@ -377,9 +224,9 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--seed', type=int, default=42, help='random seed')
     parser.add_argument('--gpu', type=str, default="0", help='gpu id')
-    # parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json', help='config file path')
-    parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json', help='config file path')
-    # parser.add_argument('--config', type=str, default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2018_freezefinetune.json', help='config file path')
+    parser.add_argument('--config', type=str,
+                        default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
+                        help='config file path')
     args = parser.parse_args()
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

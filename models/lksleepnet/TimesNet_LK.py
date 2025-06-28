@@ -128,7 +128,7 @@ class TimesBlock(nn.Module):
 
     def forward(self, x):
         B, T, N = x.size()
-        period_list, period_weight = FFT_for_Period(x, self.k)
+        period_list, period_weight = FFT_for_Period(x)
         if period_list[0] > self.seq_len:
             period_list[0] = self.seq_len
 
@@ -153,7 +153,7 @@ class TimesBlock(nn.Module):
             # reshape back
             out = out.permute(0, 2, 3, 1).reshape(B, -1, N)
             res.append(out[:, :self.seq_len, :])
-        res = torch.stack(res, dim=-1)
+        res = torch.stack(res, dim=-1).cuda()
         # adaptive aggregation
         period_weight = F.softmax(period_weight, dim=1)
         period_weight = period_weight.unsqueeze(1).unsqueeze(1).repeat(1, T, N, 1)
