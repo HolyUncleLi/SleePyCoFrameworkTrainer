@@ -268,7 +268,7 @@ class ModernTCN(nn.Module):
         self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=8, kernel_size=15, stride=1, padding=15//2, start=4, end=8)
         self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=8, kernel_size=9, stride=1, padding=9//2, start=8, end=12)
         self.ftcnn_4 = FTConv1d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=5//2, start=12, end=16)
-        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=3//2, start=16, end=32)
+        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=3//2, start=16, end=50)
 
         self.ftcnn_downsample = nn.Sequential(
             nn.BatchNorm1d(64),
@@ -338,7 +338,7 @@ class ModernTCN(nn.Module):
                     pad_len = self.patch_size - self.patch_stride
                     pad = x[:, :, -1:].repeat(1, 1, pad_len)
                     x = torch.cat([x, pad], dim=-1)
-                '''
+
                 # ftcnn     
                 ftcnn_res_1 = self.ftcnn_1(x)
                 ftcnn_res_2 = self.ftcnn_2(x)
@@ -346,8 +346,7 @@ class ModernTCN(nn.Module):
                 ftcnn_res_4 = self.ftcnn_4(x)
                 ftcnn_res_5 = self.ftcnn_5(x)
                 ftcnn_res = torch.cat([ftcnn_res_1, ftcnn_res_2, ftcnn_res_3, ftcnn_res_4, ftcnn_res_5], dim=1)
-                '''
-                ftcnn_res = self.replace_cnn(x)
+                # ftcnn_res = self.replace_cnn(x)
                 ftcnn_res = self.ftcnn_downsample(ftcnn_res).unsqueeze(1)
             else:
                 if N % self.downsample_ratio != 0:
