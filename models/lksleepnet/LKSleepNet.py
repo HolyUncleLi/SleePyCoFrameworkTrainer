@@ -263,6 +263,7 @@ class ModernTCN(nn.Module):
         # self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
         #                          padding=4, featureDim=3008)
 
+        self.replace_cnn = nn.Conv1d(in_channels=1, out_channels=64, kernel_size=5, stride=1, padding=5//2)
         self.ftcnn_1 = FTConv1d(in_channels=1, out_channels=8, kernel_size=31, stride=1, padding=31//2, start=0, end=4)
         self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=8, kernel_size=15, stride=1, padding=15//2, start=4, end=8)
         self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=8, kernel_size=9, stride=1, padding=9//2, start=8, end=12)
@@ -306,7 +307,7 @@ class ModernTCN(nn.Module):
         self.embed = ARFEmbedding(128, 80)
         # self.embed = CBAMEmbedding(128, 16)
         self.times_drop = nn.Dropout(0.1)
-        self.timesNet = getmodel().cuda()
+        self.timesNet = getmodel()
         self.shortcut = nn.Linear(80, 64)
 
         # head
@@ -337,24 +338,16 @@ class ModernTCN(nn.Module):
                     pad_len = self.patch_size - self.patch_stride
                     pad = x[:, :, -1:].repeat(1, 1, pad_len)
                     x = torch.cat([x, pad], dim=-1)
-
-                # ftcnn
                 '''
-                ftcnn_res = self.ftcnn(x[:, :, 0:30000].reshape(self.batchsize * self.seq_len, 1, 3000))
-                # padding
-                ftcnn_res = ftcnn_res.view(self.batchsize, self.ftcnn_channels, -1)
-                pad_len = 8
-                ftcnn_res = torch.cat([ftcnn_res, ftcnn_res[:, :, -pad_len:]], dim=-1)
-                # downsample
-                print(ftcnn_res.shape)
-                ftcnn_res = self.ftcnn_downsample(ftcnn_res).unsqueeze(1)
-                '''
+                # ftcnn     
                 ftcnn_res_1 = self.ftcnn_1(x)
                 ftcnn_res_2 = self.ftcnn_2(x)
                 ftcnn_res_3 = self.ftcnn_3(x)
                 ftcnn_res_4 = self.ftcnn_4(x)
                 ftcnn_res_5 = self.ftcnn_5(x)
                 ftcnn_res = torch.cat([ftcnn_res_1, ftcnn_res_2, ftcnn_res_3, ftcnn_res_4, ftcnn_res_5], dim=1)
+                '''
+                ftcnn_res = self.replace_cnn(x)
                 ftcnn_res = self.ftcnn_downsample(ftcnn_res).unsqueeze(1)
             else:
                 if N % self.downsample_ratio != 0:
