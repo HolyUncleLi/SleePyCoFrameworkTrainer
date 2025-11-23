@@ -396,7 +396,7 @@ class ModernTCN(nn.Module):
             x = self.crf.viterbi_decode(x, self.mask)
             x = np.array(x).reshape(-1)
         '''
-        return [x]
+        return [x, self.shortcut(cnn_out)]
 
     def forward(self, x, tags=None, pre_stage=2):
         x = self.classification2(x, tags=tags)

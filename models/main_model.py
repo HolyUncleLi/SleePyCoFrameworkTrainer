@@ -103,7 +103,7 @@ class MainModel(nn.Module):
         # print("input shape: ", x.shape)
         outputs = []
         features = self.feature(x)
-        # print("features shape: ", len(features), features[0].shape)
+        # print("features shape: ", len(features), features[0].shape, features[1].shape)
         for feature in features:
             if self.bb_cfg['dropout']:
                 feature = self.dropout(feature)
@@ -116,5 +116,6 @@ class MainModel(nn.Module):
                 outputs.append(output)    # (B, L, H)
             else:
                 raise NotImplementedError
-        # print("out shape: ", len(outputs), outputs[0].shape)
+        outputs.append(features[1])
+        # print("out shape: ", len(outputs), outputs[0].shape, outputs[1].shape)
         return outputs

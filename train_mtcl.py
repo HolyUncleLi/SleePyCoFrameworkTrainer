@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from utils import *
 from loader import EEGDataLoader
 from models.main_model import MainModel
-
+import torch.nn.functional as f
 
 # from test import *
 
@@ -152,7 +152,71 @@ class OneFoldTrainer:
             outputs = self.model(inputs)
             outputs_sum = torch.zeros_like(outputs[0])
 
-            for j in range(len(outputs)):
+            cnn_out = outputs[2]
+            label_temp = labels
+
+            # ==================== 最终绘图代码 (使用方法2) ====================
+            with torch.no_grad():
+                flattened_labels = labels.reshape(-1)
+                label_map = ['W', 'N1', 'N2', 'N3', 'REM']
+
+                for i in range(cnn_out.size(0)):
+                    # --- 1. 获取数据和标签 ---
+                    feature_map_to_plot = cnn_out[i]  # 形状: [channels, features]
+                    label_index = flattened_labels[i].item()
+                    label_str = label_map[label_index]
+
+                    # --- 2. 后处理数据：激活值加权平均 ---
+                    if feature_map_to_plot.shape[0] > 1:  # 确保有多个通道可以加权
+                        # a. 计算每个通道的激活强度 (使用标准差来捕捉信号变化)
+                        channel_activations = torch.std(feature_map_to_plot, dim=1)
+
+                        # b. 使用 Softmax 将激活强度转换为总和为1的权重
+                        weights = torch.softmax(channel_activations, dim=0)
+
+                        # c. 进行加权平均
+                        #    weights.unsqueeze(1) 将其形状从 [channels] 变为 [channels, 1] 以便广播
+                        processed_feature = torch.sum(feature_map_to_plot * weights.unsqueeze(1), dim=0)
+                    else:  # 如果只有一个通道，直接使用它
+                        processed_feature = feature_map_to_plot.squeeze(0)
+
+                    mean_feature_map_np = f.relu(processed_feature).cpu().numpy()
+
+                    # --- 3. (可选但推荐) 对最终的一维波形进行平滑 ---
+                    # 这一步不改变数据本质，只优化视觉效果
+                    try:
+                        from scipy.signal import savgol_filter
+                        if len(mean_feature_map_np) > 5:
+                            # window_length 必须是奇数, polyorder 必须小于 window_length
+                            mean_feature_map_np =  savgol_filter(mean_feature_map_np, window_length=5, polyorder=2)
+                    except ImportError:
+                        # 如果没有安装 scipy，就跳过平滑
+                        pass
+
+                    # --- 4. 创建并设置图表样式 (与您原来的代码完全相同) ---
+                    plt.figure(figsize=(12, 1.5))
+                    ax = plt.gca()
+                    ax.plot(mean_feature_map_np, label=label_str)
+                    ax.set_ylim(-0.05,
+                                max(np.max(mean_feature_map_np) * 1.05, 0.8) if np.max(
+                                    mean_feature_map_np) > 0 else 0.8)
+                    ax.legend(loc='upper right')
+
+                    plt.xticks(rotation=0)  # 如需旋转刻度调整角度
+                    plt.tight_layout()  # 自动调整子图参数，避免刻度被截断
+                    plt.subplots_adjust(top=0.95, bottom=0.15)  # 根据需要微调上下边距
+
+                    plt.savefig(
+                        f'./figures/waveform/feature_map_sample_{self.fold}_{i}_stage_{label_str}.png',
+                        bbox_inches='tight',  # 保存时收紧边界，防止截断并去掉多余空白
+                        pad_inches=0.02,  # 保存时的额外内边距，按需调小或调大
+                        dpi=300
+                    )
+                    plt.close()
+            # ==================== 绘图代码结束 ====================
+
+
+            for j in range(2):
                 loss += self.criterion(outputs[j], labels)
                 outputs_sum += outputs[j]
 
@@ -165,6 +229,8 @@ class OneFoldTrainer:
 
             progress_bar(i, len(self.loader_dict[mode]), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                          % (eval_loss / (i + 1), 100. * correct / total, correct, total))
+
+        self.batch += 1
 
         if mode == 'val':
             return 100. * correct / total, eval_loss
