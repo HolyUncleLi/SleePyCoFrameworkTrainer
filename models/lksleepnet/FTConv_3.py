@@ -63,6 +63,7 @@ def fft_conv(
     groups: int = 1,
     start: int = 0,
     end: int = 50,
+    pgsa_module: nn.Module = None,  # PGSA模块
 ) -> Tensor:
     frequency_res = 100/3000
     frequency_band = [int(start/frequency_res), int(end/frequency_res)]
@@ -117,6 +118,13 @@ def fft_conv(
 
     kernel_fr.imag *= -1
     output_fr = complex_matmul(signal_fr, kernel_fr, groups=groups)
+
+    # --- PGSA ---
+    if pgsa_module is not None:
+        output_fr_squeezed = output_fr.squeeze(2)
+        output_fr = pgsa_module(output_fr_squeezed)
+    # --- PGSA end ---
+
     output = irfftn(output_fr, dim=tuple(range(2, signal.ndim)))
 
     # Remove extra padded values
@@ -150,6 +158,7 @@ class _FTConv(nn.Module):
         ndim: int = 1,
         start: int = 0,
         end: int = 50,
+        pgsa_module: nn.Module = None,
     ):
 
         super().__init__()
@@ -164,6 +173,7 @@ class _FTConv(nn.Module):
         self.use_bias = bias
         self.start = start
         self.end = end
+        self.pgsa_module = pgsa_module
 
         if in_channels % groups != 0:
             raise ValueError(
@@ -193,7 +203,8 @@ class _FTConv(nn.Module):
             dilation=self.dilation,
             groups=self.groups,
             start=self.start,
-            end=self.end
+            end=self.end,
+            pgsa_module=self.pgsa_module  # 3. 在调用时将工具“传递”下去
         )
 
 

@@ -18,6 +18,76 @@ import torch.nn.functional as f
 # from test import *
 
 
+def spectral_constraint_loss(lkconv_features, labels, fs=100, lambda_spec=1.35):
+    """
+    Computes the Spectral Constraint Loss based on the AASM manual.
+
+    Args:
+        lkconv_features (torch.Tensor): The output features from the model's backbone.
+                                        Shape: [batch_size, num_channels, feature_length].
+        labels (torch.Tensor): The ground-truth sleep stage labels.
+                               Shape: [batch_size].
+        fs (int): The sampling frequency of the original signal, which determines
+                  the frequency resolution of the features. Defaults to 100 for Sleep-EDF.
+        lambda_spec (float): The weight for this loss component. Defaults to 1.35 from the paper.
+
+    Returns:
+        torch.Tensor: A scalar tensor representing the weighted spectral loss.
+    """
+    # Define the target frequency bands for each sleep stage according to AASM
+    # (0: Wake, 1: N1, 2: N2, 3: N3, 4: REM)
+    # These are approximations and can be fine-tuned.
+    freq_bands = {
+        0: (13.0, 30.0),  # Wake: Beta waves
+        1: (4.0, 8.0),    # N1: Theta waves
+        2: (11.0, 16.0),  # N2: Sleep Spindles (Sigma band)
+        3: (0.5, 4.0),    # N3: Delta waves (Slow Wave Sleep)
+        4: (4.0, 8.0),    # REM: Theta waves (similar to N1)
+    }
+
+    device = lkconv_features.device
+    batch_size, _, n_features = lkconv_features.shape
+
+    # 1. Compute Power Spectral Density (PSD)
+    # S(ω) = |F(X_LKConv)|²
+    psd = torch.abs(torch.fft.rfft(lkconv_features, dim=-1)) ** 2
+
+    # 2. Get the frequency axis for the PSD
+    # This maps the indices of the psd tensor to actual frequencies in Hz
+    freqs = torch.fft.rfftfreq(n_features, d=1/fs).to(device)
+
+    total_loss = 0.0
+    # Loop over each sample in the batch
+    for i in range(batch_size):
+        label = labels[i].item()
+
+        # Check if the label has a defined frequency band
+        if label not in freq_bands:
+            continue
+
+        target_band = freq_bands[label]
+
+        # 3. Create a boolean mask for frequencies inside the target band
+        in_band_mask = (freqs >= target_band[0]) & (freqs <= target_band[1])
+
+        # 4. Calculate the energy within the target band using the mask
+        # We sum across the channel and frequency dimensions for the i-th sample
+        in_band_energy = psd[i, :, in_band_mask].sum()
+
+        # 5. Calculate the total energy for that sample
+        # Add a small epsilon for numerical stability
+        total_energy = psd[i].sum() + 1e-8
+
+        # 6. Calculate the loss for this single sample: 1 - (ratio)
+        sample_loss = 1.0 - (in_band_energy / total_energy)
+        total_loss += sample_loss
+
+    # 7. Average the loss over the batch and apply the lambda weight
+    final_loss = lambda_spec * (total_loss / batch_size)
+
+    return final_loss
+
+
 class OneFoldTrainer:
     def __init__(self, args, fold, config):
         self.args = args
@@ -106,7 +176,7 @@ class OneFoldTrainer:
         correct, total, train_loss = 0, 0, 0
 
         for i, (inputs, labels) in enumerate(self.loader_dict['train']):
-            loss = 0
+            loss_ce = 0
             total += labels.size(0)
             inputs = inputs.to(self.device)
             labels = labels.view(-1).to(self.device)
@@ -117,8 +187,12 @@ class OneFoldTrainer:
             # print(len(outputs), outputs[0].shape, outputs[1].shape,outputs[2].shape)
 
             for j in range(2):
-                loss += self.criterion(outputs[j], labels)
+                loss_ce += self.criterion(outputs[j], labels)
                 outputs_sum += outputs[j]
+
+            loss_spec = spectral_constraint_loss(outputs[2], labels, fs=100)
+
+            loss = loss_ce + loss_spec
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -313,7 +387,7 @@ def main():
     Y_true = np.zeros(0)
     Y_pred = np.zeros((0, config['classifier']['num_classes']))
 
-    for fold in range(1, 3):
+    for fold in range(1, 2):
     # for fold in range(1, config['dataset']['num_splits'] + 1):
         trainer = OneFoldTrainer(args, fold, config)
         y_true, y_pred = trainer.run()

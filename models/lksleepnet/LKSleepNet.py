@@ -9,6 +9,27 @@ from .CBAM import CBAM1d, CBAM2d
 TimesNet 上下文时序编码
 '''
 
+
+# 放置在 LKSleepNet.py 文件的开头部分
+class PGSA(nn.Module):
+    def __init__(self, in_channels, feature_len=3):
+        super().__init__()
+        # 使用一个简单的 Conv1d 来学习频域上的注意力权重
+        # kernel_size=3 可以关注局部频率区域
+        self.conv = nn.Conv1d(in_channels, in_channels, kernel_size=3, padding=1, groups=in_channels)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x_fr):
+        # 为了处理复数，在模值上应用注意力
+        magnitude = x_fr.abs()
+
+        # 生成注意力掩码
+        attn_mask = self.conv(magnitude)
+        attn_mask = self.sigmoid(attn_mask)
+
+        return x_fr * attn_mask
+
+
 class SEBlock(nn.Module):
     def __init__(self, in_dim, reduction=16):
         super().__init__()
@@ -230,7 +251,7 @@ class ModernTCN(nn.Module):
 
         self.task_name = task_name
         self.class_drop = class_drop
-        self.batchsize = 2
+        self.batchsize = 64
         self.seq_len = 10
         self.channeldim = 128
         self.featuredim = 80  # seq len * 8
@@ -263,12 +284,15 @@ class ModernTCN(nn.Module):
         # self.ftcnn = FTConv1d(in_channels=1, out_channels=self.ftcnn_channels, kernel_size=9, stride=1,
         #                          padding=4, featureDim=3008)
 
+        self.pgsa_low_freq = PGSA(in_channels=8)
+        self.pgsa_high_freq = PGSA(in_channels=32)
+
         self.replace_cnn = nn.Conv1d(in_channels=1, out_channels=64, kernel_size=5, stride=1, padding=5//2)
-        self.ftcnn_1 = FTConv1d(in_channels=1, out_channels=8, kernel_size=31, stride=1, padding=31//2, start=0, end=4)
-        self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=8, kernel_size=15, stride=1, padding=15//2, start=4, end=8)
-        self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=8, kernel_size=9, stride=1, padding=9//2, start=8, end=12)
-        self.ftcnn_4 = FTConv1d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=5//2, start=12, end=16)
-        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=3//2, start=16, end=50)
+        self.ftcnn_1 = FTConv1d(in_channels=1, out_channels=8, kernel_size=31, stride=1, padding=31//2, start=0, end=4, pgsa_module=self.pgsa_low_freq)
+        self.ftcnn_2 = FTConv1d(in_channels=1, out_channels=8, kernel_size=15, stride=1, padding=15//2, start=4, end=8, pgsa_module=self.pgsa_low_freq)
+        self.ftcnn_3 = FTConv1d(in_channels=1, out_channels=8, kernel_size=9, stride=1, padding=9//2, start=8, end=12, pgsa_module=self.pgsa_low_freq)
+        self.ftcnn_4 = FTConv1d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=5//2, start=12, end=16, pgsa_module=self.pgsa_low_freq)
+        self.ftcnn_5 = FTConv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=3//2, start=16, end=50, pgsa_module=self.pgsa_high_freq)
 
         self.ftcnn_downsample = nn.Sequential(
             nn.BatchNorm1d(64),
