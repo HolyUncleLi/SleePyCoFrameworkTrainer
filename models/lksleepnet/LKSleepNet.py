@@ -2,8 +2,8 @@ from .ReConv_2 import *
 from .TimesNet_LK import getmodel
 from .embed import *
 from .CBAM import CBAM1d, CBAM2d
-from .CRF import CRF
-import numpy as np
+# from .CRF import CRF
+# import numpy as np
 
 '''
 TimesNet 上下文时序编码

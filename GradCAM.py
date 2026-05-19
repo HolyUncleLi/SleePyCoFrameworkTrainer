@@ -80,7 +80,7 @@ def getEEGData(h5file, filesname, num, channel = 0):
 
 
 keys = ["Fpz-Cz", "Pz-Oz", "label"]
-h5file = "F://models//SleepStage//SleepEdfData//SCDataSet//data/"
+h5file = "F:/models/SHNN/SHNN-main/SubData/"
 files = os.listdir(h5file)
 
 x, y = getEEGData(h5file, files, num=3)
@@ -94,10 +94,10 @@ b = np.stack(x_temp[1][:])
 c = np.stack(x_temp[2][:])
 d = np.stack(x_temp[3][:])
 e = np.stack(x_temp[4][:])
-
 print(a.shape,b.shape,c.shape,d.shape,e.shape)
 
 
+# 废弃代码段
 def grawgradcam(data, model, savePath):
     for i in range(data.shape[0]):
         cam = grad_cam(model, x)
@@ -140,6 +140,7 @@ parser.add_argument('--seed', type=int, default=42, help='random seed')
 parser.add_argument('--gpu', type=str, default="0", help='gpu id')
 parser.add_argument('--config', type=str,
                     default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
+                    # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2018_freezefinetune.json',
                     # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json',
                     help='config file path')
 args = parser.parse_args()
@@ -147,9 +148,9 @@ with open(args.config) as config_file:
     config = json.load(config_file)
 config['name'] = os.path.basename(args.config).replace('.json', '')
 
-
+# --- grad-cam test begin ---
 for index in range(10):
-    # 示例一维信号
+    # 硬编码睡眠阶段的cam结果
     signal = e[index]
     x = torch.tensor(signal, dtype=torch.float32)
     # x = (x - torch.min(x))/(torch.max(x) - torch.min(x))
@@ -158,12 +159,12 @@ for index in range(10):
     print("signal shape:", signal.shape)
 
     # 初始化模型并获取Grad-CAM
-    model = MainModel(config)
+    model = MainModel(config).cuda()
     hook = model.feature.model.embed.register_forward_hook(hook_fn)
     model = torch.nn.DataParallel(model, device_ids=list(range(len(args.gpu.split(",")))))
     # total_params = sum(p.numel() for p in model.parameters())
     # print(f"Total number of parameters: {total_params}")
-    model.load_state_dict(torch.load("F:/models/SleePyCoFramework/results/FTCNN+LKCNN+Transformer_85.8_4.7/checkpoints/ckpt_fold-01.pth"))
+    model.load_state_dict(torch.load("./checkpoints/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune/ckpt_fold-01.pth"))
     model.eval()
     print("loaded model")
     # model.train()
@@ -203,5 +204,5 @@ for index in range(10):
 
     plt.title('Signal with Attention Weights')
     plt.savefig("./results/cam/wake/"+str(index)+".png", bbox_inches='tight', pad_inches=0)
-    # plt.show()
+    plt.show()
 

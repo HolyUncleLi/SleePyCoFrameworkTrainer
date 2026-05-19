@@ -7,7 +7,6 @@ from .RevIN import *
 # from layers.Embed import DataEmbedding
 # from xception import xception
 # from resnet import ResNet18
-from .LKTCN2 import Stage2
 
 '''
 轻量LK版本
