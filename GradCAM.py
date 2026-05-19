@@ -27,17 +27,20 @@ def grad_cam(model, x):
 
     x = x.unsqueeze(0).unsqueeze(0)  # 添加批次和通道维度
     x.requires_grad = True
-    output = model(torch.rand([1, 30000, 1]).cuda())
+    output = model(torch.rand([2,1,30000]).cuda())
     # output = model(x.view(1, 3000, 1))
-
+    print(len(output), output[0].shape, output[1].shape, output[2].shape)
     # 反向传播
     model.zero_grad()
-    target = output[0, torch.argmax(output[0])]
+    logits = output[0]  # 取第一个分类输出
+    pred = torch.argmax(logits[0])  # 对 batch 中第一个样本取预测类别
+    target = logits[0, pred]  # 取该类别对应的分数
     target.backward()
     print("predict label: ", target)
 
     # 获取梯度和特征图
-    gradients = model.model.embed.weight.grad.data.numpy()[0]
+    # gradients = model.module.feature.model.embed.weight.grad.data.numpy()[0] # 学习版
+    gradients = model.module.feature.model.embed.weight.grad.data.numpy()[0]
     print("grad shape: ", gradients.shape)
     print("features shape: ", len(features), features[-1].shape)
 
@@ -147,7 +150,11 @@ args = parser.parse_args()
 with open(args.config) as config_file:
     config = json.load(config_file)
 config['name'] = os.path.basename(args.config).replace('.json', '')
-
+'''
+model = MainModel(config).cuda()
+out = model(torch.rand([8,1,30000]).cuda())
+print(len(out), out[0].shape)
+'''
 # --- grad-cam test begin ---
 for index in range(10):
     # 硬编码睡眠阶段的cam结果
@@ -159,7 +166,7 @@ for index in range(10):
     print("signal shape:", signal.shape)
 
     # 初始化模型并获取Grad-CAM
-    model = MainModel(config).cuda()
+    model = MainModel(config)
     hook = model.feature.model.embed.register_forward_hook(hook_fn)
     model = torch.nn.DataParallel(model, device_ids=list(range(len(args.gpu.split(",")))))
     # total_params = sum(p.numel() for p in model.parameters())

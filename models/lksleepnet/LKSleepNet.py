@@ -230,7 +230,7 @@ class ModernTCN(nn.Module):
 
         self.task_name = task_name
         self.class_drop = class_drop
-        self.batchsize = 64
+        self.batchsize = 2
         self.seq_len = 10
         self.channeldim = 128
         self.featuredim = 80  # seq len * 8

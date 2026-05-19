@@ -114,7 +114,9 @@ class OneFoldTrainer:
             outputs = self.model(inputs)
             outputs_sum = torch.zeros_like(outputs[0])
 
-            for j in range(len(outputs)):
+            # print(len(outputs), outputs[0].shape, outputs[1].shape,outputs[2].shape)
+
+            for j in range(2):
                 loss += self.criterion(outputs[j], labels)
                 outputs_sum += outputs[j]
 
@@ -293,6 +295,8 @@ def main():
     parser.add_argument('--gpu', type=str, default="0", help='gpu id')
     parser.add_argument('--config', type=str,
                         default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
+                        # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json',
+                        # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2018_freezefinetune.json',
                         help='config file path')
     args = parser.parse_args()
 
