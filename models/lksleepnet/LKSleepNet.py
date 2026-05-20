@@ -296,8 +296,8 @@ class ModernTCN(nn.Module):
 
         self.ftcnn_downsample = nn.Sequential(
             nn.BatchNorm1d(64),
-            nn.AdaptiveAvgPool1d(3750),  # seq len * 375
-            # nn.AdaptiveAvgPool1d(4687),  # seq len * 375
+            # nn.AdaptiveAvgPool1d(3750),  # seq len * 300
+            nn.AdaptiveAvgPool1d(4687),  # seq len * 375
         )
         '''
         self.ftcnn_downsample = nn.Sequential(
