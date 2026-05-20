@@ -18,7 +18,7 @@ import torch.nn.functional as f
 # from test import *
 
 
-def spectral_constraint_loss(lkconv_features, labels, fs=100, lambda_spec=1.35):
+def spectral_constraint_loss(lkconv_features, labels, fs=100, lambda_spec=1.15):
     """
     Computes the Spectral Constraint Loss based on the AASM manual.
 
@@ -78,7 +78,7 @@ def spectral_constraint_loss(lkconv_features, labels, fs=100, lambda_spec=1.35):
         # Add a small epsilon for numerical stability
         total_energy = psd[i].sum() + 1e-8
 
-        # 6. Calculate the loss for this single sample: 1 - (ratio)
+        # Calculate the loss for this single sample: 1 - (ratio)
         sample_loss = 1.0 - (in_band_energy / total_energy)
         total_loss += sample_loss
 
@@ -192,7 +192,7 @@ class OneFoldTrainer:
 
             loss_spec = spectral_constraint_loss(outputs[2], labels, fs=100)
 
-            loss = loss_ce + loss_spec
+            loss = loss_ce * 2.25 + loss_spec
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -368,8 +368,8 @@ def main():
     parser.add_argument('--seed', type=int, default=42, help='random seed')
     parser.add_argument('--gpu', type=str, default="0", help='gpu id')
     parser.add_argument('--config', type=str,
-                        default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
-                        # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json',
+                        # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2013_freezefinetune.json',
+                        default='./configs/SleePyCo-Transformer_SL-10_numScales-3_SHHS_freezefinetune.json',
                         # default='./configs/SleePyCo-Transformer_SL-10_numScales-3_Sleep-EDF-2018_freezefinetune.json',
                         help='config file path')
     args = parser.parse_args()
@@ -387,8 +387,8 @@ def main():
     Y_true = np.zeros(0)
     Y_pred = np.zeros((0, config['classifier']['num_classes']))
 
-    for fold in range(1, 2):
-    # for fold in range(1, config['dataset']['num_splits'] + 1):
+    # for fold in range(1, 2):
+    for fold in range(1, config['dataset']['num_splits'] + 1):
         trainer = OneFoldTrainer(args, fold, config)
         y_true, y_pred = trainer.run()
         Y_true = np.concatenate([Y_true, y_true])
