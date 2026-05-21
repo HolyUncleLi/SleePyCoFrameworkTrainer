@@ -13,7 +13,7 @@ class EEGDataLoader(Dataset):
         self.set = set
         self.fold = fold
 
-        self.sr = 125
+        self.sr = 100
         self.dset_cfg = config['dataset']
         
         self.root_dir = self.dset_cfg['root_dir']
